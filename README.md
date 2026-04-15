@@ -67,7 +67,7 @@ Desenvolvido por **Gabriel Falcão da Cruz**.
 Atualmente cursando Sistemas de Informação (5º Semestre) e focado em soluções de arquitetura de nuvem escaláveis.
 
 - **🌐 Portfólio:** [Link do seu Portfólio](https://www.gabrielfalcaodacruz.tech/)
-- **💼 LinkedIn:** [linkedin.com/in/gabrielfalcaocruz](https://www.linkedin.com/in/gabrielfalcaodev/)
+- **💼 LinkedIn:** [Link do LinkedIn](https://www.linkedin.com/in/gabrielfalcaodev/)
 
 ---
 
