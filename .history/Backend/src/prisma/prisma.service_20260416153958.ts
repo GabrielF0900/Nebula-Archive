@@ -1,7 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
 
 @Injectable()
 export class PrismaService
@@ -9,10 +7,11 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    const connectionString = process.env.DATABASE_URL;
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
-    super({ adapter });
+    super({
+      // @ts-ignore - Força o Prisma a aceitar a URL mesmo com erro de tipagem no VS Code
+      datasourceUrl: process.env.DATABASE_URL,
+      log: ['query', 'error', 'warn'],
+    });
   }
 
   async onModuleInit() {
