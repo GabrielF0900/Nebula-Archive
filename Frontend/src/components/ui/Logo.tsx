@@ -15,7 +15,10 @@ export function Logo({ size = 'md', className }: LogoProps) {
   return (
     <div className={cn('flex items-center gap-2', className)}>
       <div className="relative">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+        <div 
+          className="w-8 h-8 rounded-lg flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, #6366f1, #22d3ee)' }}
+        >
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -32,10 +35,13 @@ export function Logo({ size = 'md', className }: LogoProps) {
             <line x1="10.88" y1="21.94" x2="15.46" y2="14" />
           </svg>
         </div>
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full animate-pulse" />
+        <div 
+          className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse" 
+          style={{ backgroundColor: '#22d3ee' }}
+        />
       </div>
-      <span className={cn('font-bold text-foreground tracking-tight', sizes[size])}>
-        Nebula<span className="text-primary">Archive</span>
+      <span className={cn('font-bold tracking-tight', sizes[size])} style={{ color: '#f0f0f5' }}>
+        Nebula<span style={{ color: '#6366f1' }}>Archive</span>
       </span>
     </div>
   )

@@ -14,16 +14,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
   isLoading,
   disabled,
   children,
+  style,
   ...props
 }, ref) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed'
-  
-  const variants = {
-    primary: 'bg-primary text-white hover:bg-primary-hover active:scale-[0.98]',
-    secondary: 'bg-surface text-foreground border border-border hover:bg-surface-hover active:scale-[0.98]',
-    ghost: 'text-muted hover:text-foreground hover:bg-surface-hover',
-    danger: 'bg-error text-white hover:bg-error/90 active:scale-[0.98]'
-  }
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed'
   
   const sizes = {
     sm: 'px-3 py-1.5 text-sm gap-1.5',
@@ -31,10 +25,31 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     lg: 'px-6 py-3 text-base gap-2'
   }
 
+  const variantStyles: Record<string, React.CSSProperties> = {
+    primary: {
+      backgroundColor: '#6366f1',
+      color: '#ffffff',
+    },
+    secondary: {
+      backgroundColor: '#12121a',
+      color: '#f0f0f5',
+      border: '1px solid #2a2a3a',
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      color: '#8888a0',
+    },
+    danger: {
+      backgroundColor: '#ef4444',
+      color: '#ffffff',
+    }
+  }
+
   return (
     <button
       ref={ref}
-      className={cn(baseStyles, variants[variant], sizes[size], className)}
+      className={cn(baseStyles, sizes[size], className)}
+      style={{ ...variantStyles[variant], ...style }}
       disabled={disabled || isLoading}
       {...props}
     >

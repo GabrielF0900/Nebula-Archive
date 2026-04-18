@@ -37,7 +37,15 @@ export function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
-          <div className="p-3 bg-error/10 border border-error/20 rounded-lg text-sm text-error" role="alert">
+          <div 
+            className="p-3 rounded-lg text-sm" 
+            style={{ 
+              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#ef4444'
+            }}
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -65,7 +73,8 @@ export function LoginPage() {
         <div className="flex justify-end">
           <Link
             to="/recuperar-senha"
-            className="text-sm text-primary hover:text-primary-hover transition-colors"
+            className="text-sm transition-colors"
+            style={{ color: '#6366f1' }}
           >
             Esqueceu a senha?
           </Link>
@@ -75,9 +84,9 @@ export function LoginPage() {
           Entrar
         </Button>
 
-        <p className="text-center text-sm text-muted">
-          Não tem uma conta?{' '}
-          <Link to="/registro" className="text-primary hover:text-primary-hover font-medium transition-colors">
+        <p className="text-center text-sm" style={{ color: '#8888a0' }}>
+          Nao tem uma conta?{' '}
+          <Link to="/registro" className="font-medium transition-colors" style={{ color: '#6366f1' }}>
             Criar conta
           </Link>
         </p>

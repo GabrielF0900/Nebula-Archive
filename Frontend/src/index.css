@@ -13,14 +13,6 @@
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
-  
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
 }
 
 * {
@@ -29,14 +21,14 @@
   box-sizing: border-box;
 }
 
-html {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+html, body, #root {
+  min-height: 100vh;
+  background-color: #0a0a0f;
+  color: #f0f0f5;
 }
 
 body {
-  font-family: var(--font-sans);
-  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -47,19 +39,19 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: #12121a;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: #2a2a3a;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-muted);
+  background: #8888a0;
 }
 
 *:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid #6366f1;
   outline-offset: 2px;
 }
