@@ -54,7 +54,12 @@ function getFileIcon(type: string) {
   return File;
 }
 
-export function FileList({ files, onRefresh, isRefreshing, onDelete }: FileListProps) {
+export function FileList({
+  files,
+  onRefresh,
+  isRefreshing,
+  onDelete,
+}: FileListProps) {
   const [selectedFile, setSelectedFile] = useState<FileResponse | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
@@ -184,7 +189,9 @@ export function FileList({ files, onRefresh, isRefreshing, onDelete }: FileListP
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          {deletingFileId === file.id ? "Excluindo..." : "Excluir"}
+                          {deletingFileId === file.id
+                            ? "Excluindo..."
+                            : "Excluir"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

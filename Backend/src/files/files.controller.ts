@@ -161,7 +161,7 @@ export class FilesController {
     }
 
     // Deletar do S3
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     await this.storageService.deleteObject((file as any).fileKey);
 
     // Deletar do banco de dados
