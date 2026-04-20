@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/user.service';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt'; // Certifique-se de ter instalado: npm install bcrypt
 
 @Injectable()
 export class AuthService {
@@ -24,7 +24,7 @@ export class AuthService {
 
     // Compara a senha enviada com o hash salvo no banco (RDS/Prisma)
     if (!user || !(await bcrypt.compare(pass, user.password))) {
-      throw new UnauthorizedException('Credenciais Inválidas');
+      throw new UnauthorizedException("Credenciais Inválidas");
     }
 
     // Retorna o token gerado (Auto-login pronto)

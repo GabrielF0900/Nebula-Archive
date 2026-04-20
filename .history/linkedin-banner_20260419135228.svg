@@ -1,0 +1,94 @@
+<svg viewBox="0 0 1200 627" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Gradientes de fundo -->
+        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#0a0e27;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#1a1a3f;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#0d2d4a;stop-opacity:1" />
+        </linearGradient>
+
+        <!-- Gradientes da logo Nebula -->
+        <linearGradient id="gradient1" x1="0" y1="0" x2="40" y2="40">
+            <stop offset="0%" stopColor="#00D4FF" />
+            <stop offset="100%" stopColor="#00D4FF" stopOpacity="0.3" />
+        </linearGradient>
+
+        <linearGradient id="gradient2" x1="8" y1="20" x2="32" y2="20">
+            <stop offset="0%" stopColor="#00D4FF" stopOpacity="0.2" />
+            <stop offset="50%" stopColor="#00D4FF" />
+            <stop offset="100%" stopColor="#00D4FF" stopOpacity="0.2" />
+        </linearGradient>
+
+        <radialGradient id="gradient3" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#00FFFF" />
+            <stop offset="100%" stopColor="#00D4FF" />
+        </radialGradient>
+
+        <!-- Filtro de sombra -->
+        <filter id="shadow">
+            <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3" />
+        </filter>
+
+        <!-- Filtro de glow -->
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+            <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+    </defs>
+
+    <!-- Fundo base -->
+    <rect width="1200" height="627" fill="url(#bgGradient)" />
+
+    <!-- Elementos decorativos - stars (discretos nos cantos) -->
+    <circle cx="80" cy="60" r="1" fill="#ffffff" opacity="0.4" />
+    <circle cx="1120" cy="70" r="1.2" fill="#ffffff" opacity="0.3" />
+    <circle cx="120" cy="580" r="0.8" fill="#ffffff" opacity="0.3" />
+    <circle cx="1100" cy="590" r="1" fill="#ffffff" opacity="0.2" />
+
+    <!-- ========== LOGO NEBULA (Topo Centro) ========== -->
+    <g filter="url(#shadow)" transform="translate(600, 90)">
+        <!-- Outer ring -->
+        <circle cx="0" cy="0" r="60" stroke="url(#gradient1)" strokeWidth="5" fill="none" />
+        <!-- Inner orbital path -->
+        <ellipse cx="0" cy="0" rx="40" ry="20" stroke="url(#gradient2)" strokeWidth="3.5" fill="none"
+            transform="rotate(-30 0 0)" />
+        <!-- Core -->
+        <circle cx="0" cy="0" r="13" fill="url(#gradient3)" />
+        <!-- Orbital dots -->
+        <circle cx="40" cy="-20" r="5" fill="#00D4FF" />
+        <circle cx="-40" cy="20" r="3.5" fill="#00D4FF" opacity="0.6" />
+    </g>
+
+    <!-- ========== CONTEÚDO (Centro, abaixo da logo) ========== -->
+    <!-- Título principal -->
+    <text x="600" y="240" font-family="Arial, Helvetica, sans-serif" font-size="56"
+        font-weight="bold" fill="#ffffff" text-anchor="middle" letter-spacing="2">
+        NEBULA-ARCHIVE
+    </text>
+
+    <!-- Subtítulo destacado -->
+    <text x="600" y="295" font-family="Arial, Helvetica, sans-serif" font-size="34"
+        font-weight="600" fill="#00D4FF" text-anchor="middle" letter-spacing="1">
+        em Desenvolvimento
+    </text>
+
+    <!-- Tagline -->
+    <text x="600" y="335" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#d0d9ff"
+        text-anchor="middle" opacity="0.85">
+        Enterprise Serverless Media Orchestrator
+    </text>
+
+    <!-- Linha separadora -->
+    <line x1="300" y1="355" x2="900" y2="355" stroke="#00D4FF" stroke-width="1.5" opacity="0.5" />
+
+    <!-- Tech stack em linha -->
+    <g opacity="0.75" font-family="monospace" font-size="13" font-weight="500" fill="#00D4FF" text-anchor="middle">
+        <text x="400" y="400">■ AWS</text>
+        <text x="580" y="400">■ NestJS</text>
+        <text x="770" y="400">■ TypeScript</text>
+        <text x="950" y="400">■ Serverless</text>
+    </g>
+</svg>

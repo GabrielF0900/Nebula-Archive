@@ -5,7 +5,6 @@ import { UserModule } from '../users/user.module';
 
 @Module({
   imports: [
-    UserModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'default_secret_key',
       signOptions: { expiresIn: '1h' },
