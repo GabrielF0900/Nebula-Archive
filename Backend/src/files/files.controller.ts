@@ -96,7 +96,6 @@ export class FilesController {
   ): Promise<FileResponseDto[]> {
     const userId = parseInt(req.user.userId);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const files = await this.fileService.getUserFiles(userId, status);
 
     return (files as any[]).map((file: any) => ({
@@ -118,8 +117,8 @@ export class FilesController {
       processedAt: file.processedAt,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       thumbnailUrl: file.thumbnailUrl,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      downloadUrl: file.downloadUrl,
+      // Para download, o frontend deve chamar o endpoint /:fileId/download-url
+      downloadUrl: undefined,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       errorMessage: file.errorMessage,
       metadata: {
@@ -146,6 +145,42 @@ export class FilesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':fileId/download-url')
+  async getDownloadUrl(
+    @Param('fileId') fileId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ downloadUrl: string }> {
+    const userId = parseInt(req.user.userId);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const file = await this.fileService.getFile(fileId, userId);
+
+    if (!file) {
+      throw new NotFoundException('Arquivo não encontrado');
+    }
+
+    // Verificar se o arquivo existe no S3
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment
+    const exists = await this.storageService.fileExists(file.fileKey);
+
+    if (!exists) {
+      throw new NotFoundException(
+        'Arquivo não encontrado no servidor de armazenamento. O upload pode não ter sido concluído corretamente.',
+      );
+    }
+
+    // Gerar URL de download pressinada
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment
+    const downloadUrl = await this.storageService.generateDownloadUrl(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      file.fileKey,
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    return { downloadUrl };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':fileId')
   async deleteFile(
     @Param('fileId') fileId: string,
@@ -162,34 +197,11 @@ export class FilesController {
 
     // Deletar do S3
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    await this.storageService.deleteObject((file as any).fileKey);
+    await this.storageService.deleteObject(file.fileKey);
 
     // Deletar do banco de dados
     await this.fileService.deleteFile(fileId, userId);
 
     return { message: 'Arquivo deletado com sucesso' };
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Get(':fileId/download-url')
-  async getDownloadUrl(
-    @Param('fileId') fileId: string,
-    @Req() req: AuthenticatedRequest,
-  ): Promise<{ downloadUrl: string }> {
-    const userId = parseInt(req.user.userId);
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const file = await this.fileService.getFile(fileId, userId);
-
-    if (!file) {
-      throw new NotFoundException('Arquivo não encontrado');
-    }
-
-    // Gerar URL de download presigned
-    // Por enquanto, retornamos uma URL mock
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const downloadUrl = `${process.env.AWS_S3_BUCKET_URL}/${(file as any).fileKey}`;
-
-    return { downloadUrl };
   }
 }

@@ -1,12 +1,12 @@
-export class FileResponseDto {
+export interface FileResponseDto {
   id: string;
   name: string;
   size: number;
   type: string;
-  status: string;
+  status: 'pending' | 'processing' | 'processed' | 'error';
   fileKey: string;
-  uploadedAt: Date;
-  processedAt?: Date;
+  uploadedAt: string;
+  processedAt?: string;
   thumbnailUrl?: string;
   downloadUrl?: string;
   errorMessage?: string;
@@ -23,18 +23,22 @@ export class FileResponseDto {
   edgeLocation?: string;
 }
 
-export class FileMetadataDto {
+export interface FileMetadataDto {
   name: string;
   size: number;
   type: string;
   fileKey: string;
 }
 
-export class UploadUrlResponseDto {
+export interface UploadUrlResponseDto {
   uploadUrl: string;
   fileKey: string;
 }
 
-export class DownloadUrlResponseDto {
+export interface DownloadUrlResponseDto {
   downloadUrl: string;
+}
+
+export interface DeleteFileResponseDto {
+  message: string;
 }

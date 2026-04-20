@@ -24,6 +24,18 @@ export interface FileResponse {
   downloadUrl?: string;
   fileKey: string;
   userId: number;
+  metadata?: {
+    duration?: number;
+    width?: number;
+    height?: number;
+    codec?: string;
+    bitrate?: number;
+    format?: string;
+    colorSpace?: string;
+    frameRate?: number;
+  };
+  edgeLocation?: string;
+  errorMessage?: string;
 }
 
 export interface DistributionResponse {

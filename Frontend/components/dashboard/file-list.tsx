@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { FileResponse } from "@/lib/api";
+import { getDownloadUrl } from "@/lib/api";
 import { FileStatusBadge } from "./file-status-badge";
 import { FileMetadataModal } from "./file-metadata-modal";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ interface FileListProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onDelete?: (fileId: string) => Promise<void>;
+  token?: string;
 }
 
 function formatFileSize(bytes: number): string {
@@ -59,9 +61,13 @@ export function FileList({
   onRefresh,
   isRefreshing,
   onDelete,
+  token,
 }: FileListProps) {
   const [selectedFile, setSelectedFile] = useState<FileResponse | null>(null);
   const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+  const [downloadingFileId, setDownloadingFileId] = useState<string | null>(
+    null,
+  );
 
   const handleDelete = async (fileId: string) => {
     if (!onDelete) return;
@@ -70,6 +76,63 @@ export function FileList({
       await onDelete(fileId);
     } finally {
       setDeletingFileId(null);
+    }
+  };
+
+  const handleDownload = async (file: FileResponse) => {
+    try {
+      setDownloadingFileId(file.id);
+
+      // Obter URL de download pressinada do servidor
+      const response = await fetch(`/api/files/${file.id}/download-url`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Erro ao obter URL de download: ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+      const downloadUrl = data.downloadUrl;
+
+      if (!downloadUrl) {
+        throw new Error("URL de download não recebida do servidor");
+      }
+
+      // Fazer download como blob para evitar abrir em nova aba
+      const fileResponse = await fetch(downloadUrl);
+      if (!fileResponse.ok) {
+        throw new Error(`Erro ao baixar arquivo: ${fileResponse.statusText}`);
+      }
+
+      const blob = await fileResponse.blob();
+
+      // Criar URL local a partir do blob
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = file.name;
+
+      // Adicionar ao DOM, clicar e remover
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Liberar memória
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Erro ao fazer download:", error);
+      alert(
+        `Erro ao fazer download do arquivo: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
+      );
+    } finally {
+      setDownloadingFileId(null);
     }
   };
 
@@ -151,14 +214,18 @@ export function FileList({
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {file.status === "processed" && file.downloadUrl && (
+                    {file.status === "processed" && (
                       <Button
+                        onClick={() => handleDownload(file)}
+                        disabled={downloadingFileId === file.id}
                         variant="outline"
                         size="sm"
-                        className="h-8 border-border hover:border-primary hover:text-primary"
+                        className="h-8 border-border hover:border-primary hover:text-black"
                       >
                         <Download className="h-4 w-4 mr-1.5" />
-                        Download
+                        {downloadingFileId === file.id
+                          ? "Baixando..."
+                          : "Download"}
                       </Button>
                     )}
                     <DropdownMenu>
@@ -212,7 +279,17 @@ export function FileList({
 
       {/* Metadata modal */}
       <FileMetadataModal
-        file={selectedFile}
+        file={
+          selectedFile
+            ? ({
+                ...selectedFile,
+                uploadedAt: new Date(selectedFile.uploadedAt),
+                processedAt: selectedFile.processedAt
+                  ? new Date(selectedFile.processedAt)
+                  : undefined,
+              } as any)
+            : null
+        }
         open={!!selectedFile}
         onClose={() => setSelectedFile(null)}
       />

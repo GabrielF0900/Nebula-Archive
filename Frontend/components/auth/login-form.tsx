@@ -42,7 +42,7 @@ export function LoginForm({
         {/* Home Button - Top Left */}
         <button
           onClick={() => navigate("/")}
-          className="absolute top-6 -left-48 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground hover:bg-primary hover:text-primary-foreground px-2 py-1 rounded transition-all"
+          className="absolute top-6 -left-48 flex items-center gap-2 text-sm text-muted-foreground hover:bg-primary hover:text-primary-foreground px-2 py-1 rounded transition-all"
         >
           <Home className="h-4 w-4" />
           Página Inicial

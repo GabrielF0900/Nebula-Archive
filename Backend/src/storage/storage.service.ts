@@ -3,6 +3,8 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -41,6 +43,32 @@ export class StorageService {
       uploadUrl: url,
       fileKey: fileKey,
     };
+  }
+
+  async generateDownloadUrl(fileKey: string): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: fileKey,
+    });
+
+    // URL válida por 24 horas para download
+    const url = await getSignedUrl(this.s3Client, command, {
+      expiresIn: 86400,
+    });
+    return url;
+  }
+
+  async fileExists(fileKey: string): Promise<boolean> {
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: fileKey,
+      });
+      await this.s3Client.send(command);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async deleteObject(fileKey: string): Promise<void> {

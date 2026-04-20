@@ -33,12 +33,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   });
 
-  // Carregar dados do localStorage ao montar
+  // Validar token ao montar (apenas se existir)
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (token) {
-      setState((prev) => ({ ...prev, isAuthenticated: true }));
-      // Carregar dados do usuário
+      // Tentar validar o token chamando /auth/me
       loadUserProfile(token);
     }
   }, []);
@@ -62,9 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             createdAt: new Date(user.createdAt),
           },
           isAuthenticated: true,
+          isLoading: false,
         }));
       } else {
-        // Token inválido, fazer logout
+        // Token inválido ou expirado, fazer logout
+        console.warn("Token inválido - fazendo logout");
         localStorage.removeItem("access_token");
         setState({
           user: null,
@@ -74,6 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
+      // Em caso de erro, fazer logout seguro
+      localStorage.removeItem("access_token");
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
     }
   };
 
@@ -102,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Carregar dados do usuário
       await loadUserProfile(token);
+      setState((prev) => ({ ...prev, isLoading: false }));
     } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
       throw error;
@@ -134,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Carregar dados do usuário e fazer auto-login
         await loadUserProfile(token);
+        setState((prev) => ({ ...prev, isLoading: false }));
       } catch (error) {
         setState((prev) => ({ ...prev, isLoading: false }));
         throw error;

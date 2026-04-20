@@ -238,6 +238,7 @@ export function DashboardPage() {
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
+                  token={token || undefined}
                 />
               </div>
             </div>
@@ -266,6 +267,7 @@ export function DashboardPage() {
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
+                  token={token || undefined}
                 />
               </TabsContent>
               <TabsContent value="processed">
@@ -274,6 +276,7 @@ export function DashboardPage() {
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
+                  token={token || undefined}
                 />
               </TabsContent>
               <TabsContent value="pending">
@@ -284,6 +287,7 @@ export function DashboardPage() {
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
+                  token={token || undefined}
                 />
               </TabsContent>
               <TabsContent value="errors">
@@ -292,6 +296,7 @@ export function DashboardPage() {
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
+                  token={token || undefined}
                 />
               </TabsContent>
             </Tabs>
