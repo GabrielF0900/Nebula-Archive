@@ -19,6 +19,8 @@ import { DashboardHeader } from "./dashboard-header";
 import { UploadDropzone } from "./upload-dropzone";
 import { FileList } from "./file-list";
 import { StatsCards } from "./stats-cards";
+import { ProfilePage } from "./profile-page";
+import { SettingsPage } from "./settings-page";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, List } from "lucide-react";
 
@@ -538,16 +540,10 @@ export function DashboardPage() {
           )}
 
           {/* Settings section */}
-          {activeSection === "settings" && (
-            <div className="glass-light rounded-lg p-6 border border-border">
-              <h2 className="text-lg font-semibold text-foreground mb-4">
-                Configurações da Conta
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Configurações de conta e preferências em breve.
-              </p>
-            </div>
-          )}
+          {activeSection === "settings" && <SettingsPage />}
+
+          {/* Profile section */}
+          {activeSection === "profile" && <ProfilePage />}
         </div>
       </main>
     </div>
