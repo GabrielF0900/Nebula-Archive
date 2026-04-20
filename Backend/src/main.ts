@@ -6,6 +6,15 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Prefixo global para todas as rotas
+  app.setGlobalPrefix('api');
+
+  // Habilitar CORS
+  app.enableCors({
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    credentials: true,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // Remove campos que não estão no DTO
@@ -16,6 +25,8 @@ async function bootstrap() {
 
   console.log('🚀 O SISTEMA DE VALIDAÇÃO ESTÁ SENDO ATIVADO AGORA!');
 
-  await app.listen(process.env.PORT ?? 3001);
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  console.log(`Servidor rodando em http://localhost:${port}/api`);
 }
 bootstrap();

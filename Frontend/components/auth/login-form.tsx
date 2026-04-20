@@ -29,6 +29,8 @@ export function LoginForm({
     setError("");
     try {
       await login(email, password);
+      // Redirect para o dashboard após login bem-sucedido
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");
     }
@@ -106,7 +108,8 @@ export function LoginForm({
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 bg-input border-border focus:border-primary focus:ring-1 focus:ring-primary transition-all pr-10"
                   required
-                />``
+                />
+                ``
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

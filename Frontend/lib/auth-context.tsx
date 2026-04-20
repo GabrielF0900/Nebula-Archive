@@ -3,27 +3,28 @@ import {
   useContext,
   useState,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 import type { User, AuthState } from "./types";
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   logout: () => void;
   resetPassword: (email: string) => Promise<void>;
+  loadProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user for demo
-const mockUser: User = {
-  id: "usr_1",
-  email: "demo@nebula.io",
-  name: "Carlos Silva",
-  avatar: undefined,
-  createdAt: new Date("2024-01-15"),
-};
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+console.log("API URL:", API_URL);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
@@ -32,45 +33,117 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   });
 
+  // Carregar dados do localStorage ao montar
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      setState((prev) => ({ ...prev, isAuthenticated: true }));
+      // Carregar dados do usuário
+      loadUserProfile(token);
+    }
+  }, []);
+
+  const loadUserProfile = async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const user = await response.json();
+        setState((prev) => ({
+          ...prev,
+          user: {
+            id: String(user.id),
+            username: user.username,
+            email: user.email,
+            createdAt: new Date(user.createdAt),
+          },
+          isAuthenticated: true,
+        }));
+      } else {
+        // Token inválido, fazer logout
+        localStorage.removeItem("access_token");
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar perfil:", error);
+    }
+  };
+
   const login = useCallback(async (email: string, password: string) => {
     setState((prev) => ({ ...prev, isLoading: true }));
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    if (email && password) {
-      setState({
-        user: { ...mockUser, email },
-        isAuthenticated: true,
-        isLoading: false,
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
-    } else {
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Erro ao fazer login");
+      }
+
+      const data = await response.json();
+      const token = data.access_token;
+
+      // Salvar token
+      localStorage.setItem("access_token", token);
+
+      // Carregar dados do usuário
+      await loadUserProfile(token);
+    } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
-      throw new Error("Credenciais inválidas");
+      throw error;
     }
   }, []);
 
   const register = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (username: string, email: string, password: string) => {
       setState((prev) => ({ ...prev, isLoading: true }));
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (name && email && password) {
-        setState({
-          user: { ...mockUser, name, email },
-          isAuthenticated: true,
-          isLoading: false,
+      try {
+        const response = await fetch(`${API_URL}/auth/register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, email, password }),
         });
-      } else {
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Erro ao criar conta");
+        }
+
+        const data = await response.json();
+        const token = data.access_token;
+
+        // Salvar token
+        localStorage.setItem("access_token", token);
+
+        // Carregar dados do usuário e fazer auto-login
+        await loadUserProfile(token);
+      } catch (error) {
         setState((prev) => ({ ...prev, isLoading: false }));
-        throw new Error("Dados inválidos");
+        throw error;
       }
     },
     [],
   );
 
   const logout = useCallback(() => {
+    localStorage.removeItem("access_token");
     setState({
       user: null,
       isAuthenticated: false,
@@ -80,17 +153,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     setState((prev) => ({ ...prev, isLoading: true }));
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setState((prev) => ({ ...prev, isLoading: false }));
 
-    if (!email) {
-      throw new Error("Email inválido");
+    try {
+      // Implementar quando houver endpoint
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setState((prev) => ({ ...prev, isLoading: false }));
+    } catch (error) {
+      setState((prev) => ({ ...prev, isLoading: false }));
+      throw error;
+    }
+  }, []);
+
+  const loadProfile = useCallback(async () => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      await loadUserProfile(token);
     }
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, register, logout, resetPassword }}
+      value={{
+        ...state,
+        login,
+        register,
+        logout,
+        resetPassword,
+        loadProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -100,7 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error("useAuth deve ser usado dentro de AuthProvider");
   }
   return context;
 }

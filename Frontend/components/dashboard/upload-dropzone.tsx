@@ -1,6 +1,12 @@
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { formatFileSize } from "@/lib/mock-data";
+import {
+  generateUploadUrl,
+  uploadFileToS3,
+  registerFileMetadata,
+} from "@/lib/api";
 import type { UploadProgress } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -28,67 +34,104 @@ const uploadStatusLabels = {
 };
 
 export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
+  const { user } = useAuth();
+  const token = localStorage.getItem("access_token");
   const [isDragging, setIsDragging] = useState(false);
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
 
-  const simulateUpload = useCallback(
+  const handleUpload = useCallback(
     async (file: File) => {
-      const uploadId = `${file.name}-${Date.now()}`;
+      if (!token) {
+        console.error("Usuário não autenticado");
+        return;
+      }
 
-      // Add to uploads
+      // Adicionar ao estado de uploads
       setUploads((prev) => [
         ...prev,
         { file, progress: 0, status: "generating-url" },
       ]);
 
-      // Simulate generating presigned URL
-      await new Promise((r) => setTimeout(r, 800));
-      setUploads((prev) =>
-        prev.map((u) =>
-          u.file.name === file.name && u.status === "generating-url"
-            ? { ...u, progress: 10, status: "uploading" }
-            : u,
-        ),
-      );
+      try {
+        // 1. Gerar URL de upload assinada
+        const { uploadUrl, fileKey } = await generateUploadUrl(
+          file.name,
+          file.type,
+          token,
+        );
 
-      // Simulate upload progress
-      for (let progress = 10; progress <= 85; progress += 15) {
-        await new Promise((r) => setTimeout(r, 300));
+        setUploads((prev) =>
+          prev.map((u) =>
+            u.file.name === file.name && u.status === "generating-url"
+              ? { ...u, progress: 10, status: "uploading" }
+              : u,
+          ),
+        );
+
+        // 2. Fazer upload do arquivo para S3
+        await uploadFileToS3(uploadUrl, file, (progress) => {
+          setUploads((prev) =>
+            prev.map((u) =>
+              u.file.name === file.name && u.status === "uploading"
+                ? { ...u, progress: Math.min(10 + progress * 0.7, 85) }
+                : u,
+            ),
+          );
+        });
+
+        // 3. Validar integridade
         setUploads((prev) =>
           prev.map((u) =>
             u.file.name === file.name && u.status === "uploading"
-              ? { ...u, progress }
+              ? { ...u, progress: 95, status: "validating" }
+              : u,
+          ),
+        );
+
+        // 4. Registrar metadados no banco de dados
+        await registerFileMetadata(
+          {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            fileKey,
+          },
+          token,
+        );
+
+        // 5. Marcar como concluído
+        setUploads((prev) =>
+          prev.map((u) =>
+            u.file.name === file.name && u.status === "validating"
+              ? { ...u, progress: 100, status: "complete" }
+              : u,
+          ),
+        );
+
+        // Remover da lista após 2 segundos
+        setTimeout(() => {
+          setUploads((prev) => prev.filter((u) => u.file.name !== file.name));
+          onUploadComplete?.();
+        }, 2000);
+      } catch (error) {
+        console.error("Erro no upload:", error);
+        setUploads((prev) =>
+          prev.map((u) =>
+            u.file.name === file.name
+              ? {
+                  ...u,
+                  status: "error",
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : "Erro desconhecido",
+                }
               : u,
           ),
         );
       }
-
-      // Simulate validation
-      setUploads((prev) =>
-        prev.map((u) =>
-          u.file.name === file.name && u.status === "uploading"
-            ? { ...u, progress: 95, status: "validating" }
-            : u,
-        ),
-      );
-      await new Promise((r) => setTimeout(r, 600));
-
-      // Complete
-      setUploads((prev) =>
-        prev.map((u) =>
-          u.file.name === file.name && u.status === "validating"
-            ? { ...u, progress: 100, status: "complete" }
-            : u,
-        ),
-      );
-
-      // Remove after a delay
-      setTimeout(() => {
-        setUploads((prev) => prev.filter((u) => u.file.name !== file.name));
-        onUploadComplete?.();
-      }, 2000);
     },
-    [onUploadComplete],
+    [token, onUploadComplete],
   );
 
   const handleDrop = useCallback(
@@ -97,18 +140,18 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
       setIsDragging(false);
 
       const files = Array.from(e.dataTransfer.files);
-      files.forEach((file) => simulateUpload(file));
+      files.forEach((file) => handleUpload(file));
     },
-    [simulateUpload],
+    [handleUpload],
   );
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
-      files.forEach((file) => simulateUpload(file));
+      files.forEach((file) => handleUpload(file));
       e.target.value = "";
     },
-    [simulateUpload],
+    [handleUpload],
   );
 
   const removeUpload = (fileName: string) => {
@@ -215,7 +258,9 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatFileSize(upload.file.size)} •{" "}
-                      {uploadStatusLabels[upload.status]}
+                      {upload.status === "error"
+                        ? (upload as any).error || "Erro no upload"
+                        : uploadStatusLabels[upload.status]}
                     </p>
                   </div>
                 </div>

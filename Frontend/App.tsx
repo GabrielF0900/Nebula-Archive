@@ -1,30 +1,12 @@
 import { ThemeProvider } from "./components/theme-provider";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./lib/auth-context";
+import { AuthProvider } from "./lib/auth-context";
 import { HomePage } from "./components/home/home-page";
 import { AuthPage } from "./components/auth/auth-page";
 import { DashboardPage } from "./components/dashboard/dashboard-page";
 import { Toaster } from "./components/ui/toaster";
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return children;
-}
-
-function AuthRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-}
+import { ProtectedRoute } from "./components/routes/protected-route";
+import { AuthRoute } from "./components/routes/auth-route";
 
 function AppRoutes() {
   return (

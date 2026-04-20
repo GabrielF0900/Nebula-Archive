@@ -1,4 +1,4 @@
-export type FileStatus = 'pending' | 'processing' | 'processed' | 'error';
+export type FileStatus = "pending" | "processing" | "processed" | "error";
 
 export interface MediaFile {
   id: string;
@@ -29,7 +29,7 @@ export interface FileMetadata {
 export interface User {
   id: string;
   email: string;
-  name: string;
+  username: string;
   avatar?: string;
   createdAt: Date;
 }
@@ -37,7 +37,7 @@ export interface User {
 export interface UploadProgress {
   file: File;
   progress: number;
-  status: 'generating-url' | 'uploading' | 'validating' | 'complete' | 'error';
+  status: "generating-url" | "uploading" | "validating" | "complete" | "error";
   error?: string;
 }
 

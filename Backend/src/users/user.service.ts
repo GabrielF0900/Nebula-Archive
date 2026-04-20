@@ -19,4 +19,11 @@ export class UsersService {
       where: { email },
     });
   }
+
+  // Usado para obter dados do usuário
+  async findById(id: string | number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id: Number(id) },
+    });
+  }
 }

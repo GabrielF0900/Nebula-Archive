@@ -24,12 +24,7 @@ export function DashboardHeader({ sidebarCollapsed }: DashboardHeaderProps) {
     navigate("/auth", { replace: true });
   };
 
-  const initials = user?.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  const initials = user?.username?.slice(0, 2).toUpperCase();
 
   return (
     <header
@@ -74,7 +69,7 @@ export function DashboardHeader({ sidebarCollapsed }: DashboardHeaderProps) {
                 </Avatar>
                 <div className="hidden sm:block text-left">
                   <p className="text-sm font-medium text-foreground">
-                    {user?.name}
+                    {user?.username}
                   </p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
@@ -82,7 +77,7 @@ export function DashboardHeader({ sidebarCollapsed }: DashboardHeaderProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5">
-                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-sm font-medium">{user?.username}</p>
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />

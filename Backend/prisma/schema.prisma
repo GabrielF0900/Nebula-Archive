@@ -13,8 +13,44 @@ datasource db {
 }
 
 model User {
-  id       Int    @id @default(autoincrement())
-  username String
-  email    String @unique
-  password String
+  id        Int      @id @default(autoincrement())
+  username  String
+  email     String   @unique
+  password  String
+  files     File[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model File {
+  id      String @id @default(uuid())
+  name    String
+  size    Int
+  type    String
+  fileKey String @unique // S3 file path: nebula/userId/timestamp-filename
+  status  String @default("pending") // pending, processing, processed, error
+  userId  Int
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Processamento
+  thumbnailUrl String?
+  downloadUrl  String?
+  errorMessage String?
+
+  // Metadados
+  duration   Int? // segundos para vídeos/áudio
+  width      Int? // pixels para imagens/vídeos
+  height     Int? // pixels para imagens/vídeos
+  codec      String?
+  bitrate    Int? // kbps
+  format     String?
+  colorSpace String?
+  frameRate  Float? // fps
+
+  // Edge distribution
+  edgeLocation String? // GRU, IAD, FRA, etc
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime?
 }

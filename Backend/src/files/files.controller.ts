@@ -1,7 +1,20 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  UseGuards,
+  Req,
+  Param,
+  Query,
+  NotFoundException,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { StorageService } from '../storage/storage.service';
+import { FileService } from './file.service';
 import { JwtAuthGuard } from '../authservice/jwt-auth.guard';
+import { FileResponseDto } from './file.dto';
 
 interface AuthUser {
   userId: string;
@@ -14,7 +27,10 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('files')
 export class FilesController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(
+    private readonly storageService: StorageService,
+    private readonly fileService: FileService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Post('upload-url')
@@ -29,5 +45,139 @@ export class FilesController {
       body.fileType,
       userId,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('metadata')
+  async registerFileMetadata(
+    @Body()
+    body: {
+      name: string;
+      size: number;
+      type: string;
+      fileKey: string;
+    },
+    @Req() req: AuthenticatedRequest,
+  ): Promise<FileResponseDto> {
+    const userId = parseInt(req.user.userId);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const file = await this.fileService.createFile(
+      userId,
+      body.name,
+      body.size,
+      body.type,
+      body.fileKey,
+    );
+
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      id: (file as any).id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      name: (file as any).name,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      size: (file as any).size,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      type: (file as any).type,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      status: (file as any).status,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      fileKey: (file as any).fileKey,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      uploadedAt: (file as any).createdAt,
+    } as unknown as FileResponseDto;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async listFiles(
+    @Req() req: AuthenticatedRequest,
+    @Query('status') status?: string,
+  ): Promise<FileResponseDto[]> {
+    const userId = parseInt(req.user.userId);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const files = await this.fileService.getUserFiles(userId, status);
+
+    return (files as any[]).map((file: any) => ({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      id: file.id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      name: file.name,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      size: file.size,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      type: file.type,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      status: file.status,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      fileKey: file.fileKey,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      uploadedAt: file.createdAt,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      processedAt: file.processedAt,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      thumbnailUrl: file.thumbnailUrl,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      downloadUrl: file.downloadUrl,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      errorMessage: file.errorMessage,
+      metadata: {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        duration: file.duration,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        width: file.width,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        height: file.height,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        codec: file.codec,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        bitrate: file.bitrate,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        format: file.format,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        colorSpace: file.colorSpace,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        frameRate: file.frameRate,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      edgeLocation: file.edgeLocation,
+    })) as FileResponseDto[];
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':fileId')
+  async deleteFile(
+    @Param('fileId') fileId: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = parseInt(req.user.userId);
+
+    await this.fileService.deleteFile(fileId, userId);
+
+    return { message: 'Arquivo deletado com sucesso' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':fileId/download-url')
+  async getDownloadUrl(
+    @Param('fileId') fileId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<{ downloadUrl: string }> {
+    const userId = parseInt(req.user.userId);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const file = await this.fileService.getFile(fileId, userId);
+
+    if (!file) {
+      throw new NotFoundException('Arquivo não encontrado');
+    }
+
+    // Gerar URL de download presigned
+    // Por enquanto, retornamos uma URL mock
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const downloadUrl = `${process.env.AWS_S3_BUCKET_URL}/${(file as any).fileKey}`;
+
+    return { downloadUrl };
   }
 }

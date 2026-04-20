@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { mockFiles } from "@/lib/mock-data";
 import type { MediaFile } from "@/lib/types";
 import { DashboardSidebar } from "./dashboard-sidebar";
@@ -11,11 +13,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, List } from "lucide-react";
 
 export function DashboardPage() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [files, setFiles] = useState<MediaFile[]>(mockFiles);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+
+  // Verificar se o usuário está autenticado
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth", { replace: true });
+    }
+  }, [user, navigate]);
 
   // Simulate short polling for status updates
   useEffect(() => {
@@ -87,7 +98,7 @@ export function DashboardPage() {
           {/* Page header */}
           <div>
             <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-              {activeSection === "dashboard" && "Dashboard"}
+              {activeSection === "dashboard" && `Bem-vindo, ${user?.username}!`}
               {activeSection === "upload" && "Upload de Arquivos"}
               {activeSection === "files" && "Gerenciador de Arquivos"}
               {activeSection === "distribution" && "Distribuição"}

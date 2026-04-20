@@ -1,3 +1,0 @@
-//Aqui será a validação do algoritmo de registro.
-
-

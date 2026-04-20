@@ -15,7 +15,7 @@ interface RegisterFormProps {
 export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   const navigate = useNavigate();
   const { register, isLoading } = useAuth();
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,7 +44,9 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     }
 
     try {
-      await register(name, email, password);
+      await register(username, email, password);
+      // Redirect para o dashboard após registro bem-sucedido (auto-login)
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar conta");
     }
@@ -83,15 +85,18 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm text-muted-foreground">
-                Nome completo
+              <Label
+                htmlFor="username"
+                className="text-sm text-muted-foreground"
+              >
+                Nome de usuário
               </Label>
               <Input
-                id="name"
+                id="username"
                 type="text"
-                placeholder="João Silva"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="seu_usuario"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="h-11 bg-input border-border focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                 required
               />
