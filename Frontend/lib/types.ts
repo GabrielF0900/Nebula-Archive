@@ -1,4 +1,9 @@
-export type FileStatus = "pending" | "processing" | "processed" | "error";
+export type FileStatus =
+  | "pending"
+  | "processing"
+  | "processed"
+  | "error"
+  | "deleted";
 
 export interface MediaFile {
   id: string;

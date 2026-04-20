@@ -33,89 +33,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: false,
   });
 
-  // Validar token ao montar (apenas se existir)
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      // Tentar validar o token chamando /auth/me
-      loadUserProfile(token);
-    }
-  }, []);
-
-  const loadUserProfile = async (token: string) => {
-    try {
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const user = await response.json();
-        setState((prev) => ({
-          ...prev,
-          user: {
-            id: String(user.id),
-            username: user.username,
-            email: user.email,
-            createdAt: new Date(user.createdAt),
+  // Carregar e validar perfil do usuário
+  const loadUserProfile = useCallback(
+    async (token: string): Promise<boolean> => {
+      try {
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-          isAuthenticated: true,
-          isLoading: false,
-        }));
-      } else {
-        // Token inválido ou expirado, fazer logout
-        console.warn("Token inválido - fazendo logout");
+        });
+
+        if (response.ok) {
+          const user = await response.json();
+          setState((prev) => ({
+            ...prev,
+            user: {
+              id: String(user.id),
+              username: user.username,
+              email: user.email,
+              createdAt: new Date(user.createdAt),
+            },
+            isAuthenticated: true,
+            isLoading: false,
+          }));
+          return true;
+        } else {
+          console.warn("Token inválido - fazendo logout");
+          localStorage.removeItem("access_token");
+          setState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+          return false;
+        }
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
         localStorage.removeItem("access_token");
         setState({
           user: null,
           isAuthenticated: false,
           isLoading: false,
         });
+        return false;
       }
-    } catch (error) {
-      console.error("Erro ao carregar perfil:", error);
-      // Em caso de erro, fazer logout seguro
-      localStorage.removeItem("access_token");
-      setState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
+    },
+    [],
+  );
+
+  // Validar token ao montar (apenas se existir)
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      loadUserProfile(token);
     }
-  };
+  }, [loadUserProfile]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    setState((prev) => ({ ...prev, isLoading: true }));
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setState((prev) => ({ ...prev, isLoading: true }));
 
-    try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao fazer login");
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Erro ao fazer login");
+        }
+
+        const data = await response.json();
+        const token = data.access_token;
+
+        // Salvar token
+        localStorage.setItem("access_token", token);
+
+        // Carregar dados do usuário
+        const success = await loadUserProfile(token);
+        if (!success) {
+          throw new Error("Falha ao carregar perfil do usuário");
+        }
+      } catch (error) {
+        setState((prev) => ({ ...prev, isLoading: false }));
+        throw error;
       }
-
-      const data = await response.json();
-      const token = data.access_token;
-
-      // Salvar token
-      localStorage.setItem("access_token", token);
-
-      // Carregar dados do usuário
-      await loadUserProfile(token);
-      setState((prev) => ({ ...prev, isLoading: false }));
-    } catch (error) {
-      setState((prev) => ({ ...prev, isLoading: false }));
-      throw error;
-    }
-  }, []);
+    },
+    [loadUserProfile],
+  );
 
   const register = useCallback(
     async (username: string, email: string, password: string) => {
@@ -142,14 +151,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("access_token", token);
 
         // Carregar dados do usuário e fazer auto-login
-        await loadUserProfile(token);
-        setState((prev) => ({ ...prev, isLoading: false }));
+        const success = await loadUserProfile(token);
+        if (!success) {
+          throw new Error("Falha ao carregar perfil do usuário");
+        }
       } catch (error) {
         setState((prev) => ({ ...prev, isLoading: false }));
         throw error;
       }
     },
-    [],
+    [loadUserProfile],
   );
 
   const logout = useCallback(() => {
@@ -177,9 +188,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async () => {
     const token = localStorage.getItem("access_token");
     if (token) {
+      setState((prev) => ({ ...prev, isLoading: true }));
       await loadUserProfile(token);
     }
-  }, []);
+  }, [loadUserProfile]);
 
   return (
     <AuthContext.Provider

@@ -49,8 +49,18 @@ export class FileService {
   }
 
   async deleteFile(fileId: string, userId: number): Promise<void> {
-    await this.prisma.file.deleteMany({
+    // Verificar se o arquivo pertence ao usuário antes de deletar
+    const file = await this.prisma.file.findFirst({
       where: { id: fileId, userId },
+    });
+
+    if (!file) {
+      throw new Error('Arquivo não encontrado');
+    }
+
+    await this.prisma.file.update({
+      where: { id: fileId },
+      data: { status: 'deleted', deletedAt: new Date() },
     });
   }
 
@@ -76,7 +86,7 @@ export class FileService {
 
   async getTotalStats(userId: number) {
     const files = (await this.prisma.file.findMany({
-      where: { userId },
+      where: { userId, status: { not: 'deleted' } },
     })) as any[];
 
     return {

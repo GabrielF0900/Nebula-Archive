@@ -17,7 +17,7 @@ export interface FileResponse {
   name: string;
   size: number;
   type: string;
-  status: "pending" | "processing" | "processed" | "error";
+  status: "pending" | "processing" | "processed" | "error" | "deleted";
   uploadedAt: string;
   processedAt?: string;
   thumbnailUrl?: string;
@@ -45,6 +45,8 @@ export interface DistributionResponse {
   latency: string;
   bandwidth: string;
   requests: number;
+  filesCount: number;
+  percentageDistributed: string;
 }
 
 export interface MonitoringMetrics {

@@ -72,34 +72,45 @@ export class MonitoringController {
     const activities = (files as any[]).map((file: any) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       const createdAtTime = new Date(file.createdAt);
-      const processingTime = 30 + Math.random() * 30;
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const isError = file.status === 'error';
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       const fileName = file.name;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       const fileId = file.id;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      const fileStatus = file.status === 'processed' ? 'success' : file.status;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+      const fileStatus = file.status;
+
+      // Mapear status para labels mais legíveis
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      let statusLabel = fileStatus;
+      if (fileStatus === 'processed') {
+        statusLabel = 'Processado';
+      } else if (fileStatus === 'processing') {
+        statusLabel = 'Processando';
+      } else if (fileStatus === 'error') {
+        statusLabel = 'Erro';
+      } else if (fileStatus === 'deleted') {
+        statusLabel = 'Excluído';
+      }
 
       return {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         id: fileId,
-        type: isError ? 'error' : 'completion',
-        description: isError
-          ? `Falha ao processar arquivo`
-          : `Arquivo processado com sucesso em ${processingTime.toFixed(0)}s`,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         fileName,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         status: fileStatus,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        statusLabel,
         timestamp: createdAtTime,
       };
     });
 
-    // Retornar os 10 arquivos mais recentes
-    return activities.slice(0, 10);
+    // Retornar ordenado por data mais recente
+    return activities.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
   }
 
   @UseGuards(JwtAuthGuard)

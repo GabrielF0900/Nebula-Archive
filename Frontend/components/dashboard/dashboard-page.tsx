@@ -24,12 +24,12 @@ import { LayoutGrid, List } from "lucide-react";
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [files, setFiles] = useState<FileResponse[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [distributions, setDistributions] = useState<DistributionResponse[]>(
     [],
@@ -38,12 +38,17 @@ export function DashboardPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
 
-  // Verificar se o usuário está autenticado
-  useEffect(() => {
-    if (!user) {
-      navigate("/auth", { replace: true });
-    }
-  }, [user, navigate]);
+  // Mostrar loading enquanto carrega o usuário
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Extrair token do localStorage
   useEffect(() => {
@@ -51,17 +56,16 @@ export function DashboardPage() {
     setToken(storedToken);
   }, []);
 
-  // Buscar arquivos do backend
   const fetchFiles = useCallback(async () => {
     if (!token) return;
     try {
-      setIsLoading(true);
+      setIsLoadingFiles(true);
       const response = await listFiles(token);
       setFiles(response);
     } catch (error) {
       console.error("Erro ao buscar arquivos:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoadingFiles(false);
     }
   }, [token]);
 
@@ -323,10 +327,15 @@ export function DashboardPage() {
                       key={location.code}
                       className="p-4 rounded-lg bg-muted/30 border border-border"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono text-sm text-primary">
-                          {location.code}
-                        </span>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <span className="font-mono text-sm text-primary font-semibold">
+                            {location.code}
+                          </span>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {location.name}
+                          </p>
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <div
                             className={cn(
@@ -338,7 +347,7 @@ export function DashboardPage() {
                           />
                           <span
                             className={cn(
-                              "text-xs",
+                              "text-xs font-medium",
                               location.status === "active"
                                 ? "text-success"
                                 : "text-muted-foreground",
@@ -348,11 +357,53 @@ export function DashboardPage() {
                           </span>
                         </div>
                       </div>
-                      <p className="text-sm text-foreground">{location.name}</p>
-                      <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                        <p>Latência: {location.latency}ms</p>
-                        <p>Banda: {location.bandwidth}</p>
-                        <p>Requisições: {location.requests}</p>
+
+                      {/* Distribution percentage */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-foreground">
+                            Distribuição
+                          </span>
+                          <span className="text-sm font-semibold text-primary">
+                            {location.percentageDistributed}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all"
+                            style={{
+                              width: location.percentageDistributed,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Location details */}
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p className="flex justify-between">
+                          <span>Latência:</span>
+                          <span className="text-foreground font-medium">
+                            {location.latency}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span>Banda:</span>
+                          <span className="text-foreground font-medium">
+                            {location.bandwidth}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span>Arquivos:</span>
+                          <span className="text-foreground font-medium">
+                            {location.filesCount}
+                          </span>
+                        </p>
+                        <p className="flex justify-between">
+                          <span>Requisições:</span>
+                          <span className="text-foreground font-medium">
+                            {location.requests}
+                          </span>
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -417,30 +468,64 @@ export function DashboardPage() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {activities.slice(0, 5).map((activity, idx) => (
+                    {activities.slice(0, 10).map((activity, idx) => (
                       <div
                         key={idx}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border"
+                        className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border hover:border-primary/50 transition-colors"
                       >
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-foreground">
-                            {activity.type || "Atividade"}
+                        {/* Status Icon */}
+                        <div className="flex-shrink-0 mt-1">
+                          <div
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              activity.status === "processed"
+                                ? "bg-success animate-pulse"
+                                : activity.status === "processing"
+                                  ? "bg-warning animate-pulse"
+                                  : activity.status === "error"
+                                    ? "bg-destructive"
+                                    : activity.status === "deleted"
+                                      ? "bg-red-500"
+                                      : "bg-muted-foreground",
+                            )}
+                          />
+                        </div>
+
+                        {/* Activity Details */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">
+                            {activity.fileName}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(activity.timestamp).toLocaleString()}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(activity.timestamp).toLocaleDateString(
+                              "pt-BR",
+                              {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
                           </p>
                         </div>
+
+                        {/* Status Badge */}
                         <div
                           className={cn(
-                            "px-2 py-1 rounded text-xs font-medium",
-                            activity.status === "success"
+                            "flex-shrink-0 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap",
+                            activity.status === "processed"
                               ? "bg-success/20 text-success"
-                              : activity.status === "error"
-                                ? "bg-destructive/20 text-destructive"
-                                : "bg-warning/20 text-warning",
+                              : activity.status === "processing"
+                                ? "bg-warning/20 text-warning"
+                                : activity.status === "error"
+                                  ? "bg-destructive/20 text-destructive"
+                                  : activity.status === "deleted"
+                                    ? "bg-red-500/20 text-red-600 line-through"
+                                    : "bg-muted/30 text-muted-foreground",
                           )}
                         >
-                          {activity.status}
+                          {activity.statusLabel || activity.status}
                         </div>
                       </div>
                     ))}

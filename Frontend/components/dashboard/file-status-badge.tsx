@@ -29,10 +29,31 @@ const statusConfig = {
     icon: AlertCircle,
     className: "bg-destructive/10 text-destructive border-destructive/20",
   },
+  deleted: {
+    label: "Deletado",
+    icon: AlertCircle,
+    className: "bg-destructive/10 text-destructive border-destructive/20",
+  },
 };
 
 export function FileStatusBadge({ status, className }: FileStatusBadgeProps) {
   const config = statusConfig[status];
+
+  // Validação para evitar erro de undefined
+  if (!config) {
+    return (
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border",
+          "bg-muted/50 text-muted-foreground border-muted",
+          className,
+        )}
+      >
+        Desconhecido
+      </div>
+    );
+  }
+
   const Icon = config.icon;
 
   return (

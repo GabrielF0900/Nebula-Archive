@@ -53,4 +53,5 @@ model File {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   processedAt DateTime?
+  deletedAt   DateTime?
 }

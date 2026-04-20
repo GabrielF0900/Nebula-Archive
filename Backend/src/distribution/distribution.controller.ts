@@ -62,6 +62,7 @@ export class DistributionController {
     },
   ];
 
+  @Get()
   @UseGuards(JwtAuthGuard)
   async getDistribution(@Req() req: AuthenticatedRequest) {
     const userId = parseInt(req.user.userId);
@@ -70,31 +71,78 @@ export class DistributionController {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const stats = await this.fileService.getTotalStats(userId);
 
-    // Calcular distribuição de requisições baseado no número de uploads
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const totalRequests = Math.max(stats.totalUploads * 5, 1);
-    const requestsPerLocation = Math.ceil(
-      totalRequests / this.edgeLocations.length,
-    );
+    // Obter arquivos do usuário para distribuição mais realista
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const userFiles = await this.fileService.getUserFiles(userId);
 
-    // Calcular banda por localização (distribuir a banda total do usuário)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const totalUploads = stats.totalUploads || 0;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const totalBandwidthGB = stats.totalSize / (1024 * 1024 * 1024);
-    const bandwidthPerLocation = (
-      totalBandwidthGB / this.edgeLocations.length
-    ).toFixed(2);
 
-    // Retornar edge locations com dados reais
-    return this.edgeLocations.map((location) => ({
-      code: location.code,
-      name: location.name,
-      status: location.status,
-      latency: location.latency,
-      bandwidth: `${bandwidthPerLocation} GB`,
-      requests: requestsPerLocation,
+    // Se não há uploads, retornar distribuição inicial equilibrada
+    if (totalUploads === 0) {
+      return this.edgeLocations.map((location) => ({
+        code: location.code,
+        name: location.name,
+        status: location.status,
+        latency: location.latency,
+        bandwidth: '0 GB',
+        requests: 0,
+        filesCount: 0,
+        percentageDistributed: '0%',
+      }));
+    }
+
+    // Calcular latência em ms para determinar preferência
+    const locationsWithMetrics = this.edgeLocations.map((location) => {
+      const latencyMs = parseInt(location.latency);
+      // Localidades mais próximas recebem mais requisições
+      const score = 1 / latencyMs;
+      return {
+        ...location,
+        score,
+        latencyMs,
+      };
+    });
+
+    // Normalizar scores para usar como pesos
+    const totalScore = locationsWithMetrics.reduce(
+      (sum, loc) => sum + loc.score,
+      0,
+    );
+    const normalizedWeights = locationsWithMetrics.map((loc) => ({
+      ...loc,
+      weight: loc.score / totalScore,
     }));
+
+    // Distribuir uploads baseado nos pesos
+    const distributedLocations = normalizedWeights.map((location) => {
+      const filesCount = Math.round(totalUploads * location.weight);
+      const bandwidthForLocation = (totalBandwidthGB * location.weight).toFixed(
+        2,
+      );
+      const requestsCount = filesCount * 5; // Aproximadamente 5 requisições por arquivo
+      const percentageDistributed = ((location.weight * 100) as number).toFixed(
+        1,
+      );
+
+      return {
+        code: location.code,
+        name: location.name,
+        status: location.status,
+        latency: location.latency,
+        bandwidth: `${bandwidthForLocation} GB`,
+        requests: requestsCount,
+        filesCount,
+        percentageDistributed: `${percentageDistributed}%`,
+      };
+    });
+
+    return distributedLocations;
   }
 
+  @Get('stats')
   @UseGuards(JwtAuthGuard)
   async getDistributionStats(@Req() req: AuthenticatedRequest) {
     const userId = parseInt(req.user.userId);
