@@ -196,7 +196,7 @@ export function DashboardPage() {
           {/* Dashboard content */}
           {activeSection === "dashboard" && (
             <div className="space-y-8">
-              <StatsCards files={files} />
+              <StatsCards files={files.filter((f) => f.status !== "deleted")} />
 
               {/* Quick upload */}
               <div className="glass-light rounded-lg p-6 border border-border">
@@ -238,7 +238,9 @@ export function DashboardPage() {
                   </div>
                 </div>
                 <FileList
-                  files={files.slice(0, 5)}
+                  files={files
+                    .filter((f) => f.status !== "deleted")
+                    .slice(0, 5)}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
@@ -267,7 +269,7 @@ export function DashboardPage() {
 
               <TabsContent value="all">
                 <FileList
-                  files={files}
+                  files={files.filter((f) => f.status !== "deleted")}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
