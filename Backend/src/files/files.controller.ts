@@ -153,6 +153,18 @@ export class FilesController {
   ) {
     const userId = parseInt(req.user.userId);
 
+    // Obter arquivo para pegar a chave do S3
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const file = await this.fileService.getFile(fileId, userId);
+    if (!file) {
+      throw new Error('Arquivo não encontrado');
+    }
+
+    // Deletar do S3
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    await this.storageService.deleteObject((file as any).fileKey);
+
+    // Deletar do banco de dados
     await this.fileService.deleteFile(fileId, userId);
 
     return { message: 'Arquivo deletado com sucesso' };

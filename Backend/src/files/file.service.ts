@@ -20,7 +20,8 @@ export class FileService {
         type: fileType,
         fileKey,
         userId,
-        status: 'pending',
+        status: 'processed',
+        processedAt: new Date(),
       },
     });
   }
@@ -43,8 +44,8 @@ export class FileService {
     });
   }
 
-  async deleteFile(fileId: string, userId: number): Promise<any> {
-    return this.prisma.file.deleteMany({
+  async deleteFile(fileId: string, userId: number): Promise<void> {
+    await this.prisma.file.deleteMany({
       where: { id: fileId, userId },
     });
   }

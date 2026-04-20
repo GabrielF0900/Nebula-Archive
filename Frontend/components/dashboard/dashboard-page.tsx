@@ -6,6 +6,7 @@ import { mockFiles } from "@/lib/mock-data";
 import type { MediaFile } from "@/lib/types";
 import {
   listFiles,
+  deleteFile,
   getDistributionInfo,
   getMonitoringMetrics,
   getMonitoringActivity,
@@ -130,6 +131,21 @@ export function DashboardPage() {
     }
   }, [token, fetchFiles]);
 
+  const handleDeleteFile = useCallback(
+    async (fileId: string) => {
+      if (!token) return;
+      try {
+        await deleteFile(fileId, token);
+        // Recarregar lista de arquivos após deletar
+        await fetchFiles();
+      } catch (error) {
+        console.error("Erro ao deletar arquivo:", error);
+        alert("Erro ao deletar arquivo");
+      }
+    },
+    [token, fetchFiles],
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardSidebar
@@ -221,6 +237,7 @@ export function DashboardPage() {
                   files={files.slice(0, 5)}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
+                  onDelete={handleDeleteFile}
                 />
               </div>
             </div>
@@ -248,6 +265,7 @@ export function DashboardPage() {
                   files={files}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
+                  onDelete={handleDeleteFile}
                 />
               </TabsContent>
               <TabsContent value="processed">
@@ -255,6 +273,7 @@ export function DashboardPage() {
                   files={files.filter((f) => f.status === "processed")}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
+                  onDelete={handleDeleteFile}
                 />
               </TabsContent>
               <TabsContent value="pending">
@@ -264,6 +283,7 @@ export function DashboardPage() {
                   )}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
+                  onDelete={handleDeleteFile}
                 />
               </TabsContent>
               <TabsContent value="errors">
@@ -271,6 +291,7 @@ export function DashboardPage() {
                   files={files.filter((f) => f.status === "error")}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
+                  onDelete={handleDeleteFile}
                 />
               </TabsContent>
             </Tabs>

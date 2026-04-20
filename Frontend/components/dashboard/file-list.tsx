@@ -30,6 +30,7 @@ interface FileListProps {
   files: FileResponse[];
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  onDelete?: (fileId: string) => Promise<void>;
 }
 
 function formatFileSize(bytes: number): string {
@@ -53,8 +54,19 @@ function getFileIcon(type: string) {
   return File;
 }
 
-export function FileList({ files, onRefresh, isRefreshing }: FileListProps) {
+export function FileList({ files, onRefresh, isRefreshing, onDelete }: FileListProps) {
   const [selectedFile, setSelectedFile] = useState<FileResponse | null>(null);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+
+  const handleDelete = async (fileId: string) => {
+    if (!onDelete) return;
+    try {
+      setDeletingFileId(fileId);
+      await onDelete(fileId);
+    } finally {
+      setDeletingFileId(null);
+    }
+  };
 
   return (
     <>
@@ -166,9 +178,13 @@ export function FileList({ files, onRefresh, isRefreshing }: FileListProps) {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(file.id)}
+                          disabled={deletingFileId === file.id}
+                          className="text-destructive focus:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Excluir
+                          {deletingFileId === file.id ? "Excluindo..." : "Excluir"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
