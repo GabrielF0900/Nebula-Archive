@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/lib/auth-context";
 import { NebulaLogo } from "@/components/nebula-logo";
 import { Button } from "@/components/ui/button";
 import { Globe, Zap, Shield, Server, ArrowRight, Menu, X } from "lucide-react";
@@ -7,7 +6,6 @@ import { useState, useEffect } from "react";
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("home");
 
@@ -92,12 +90,11 @@ export function HomePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            
             {/* Logo - Atualizada para scroll up suave */}
             <button
               onClick={(e) => {
                 e.preventDefault();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: "smooth" });
                 setActiveSection("home");
               }}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
@@ -153,30 +150,19 @@ export function HomePage() {
 
             {/* Auth Buttons */}
             <div className="hidden sm:flex items-center gap-3">
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => navigate("/dashboard")}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                >
-                  Dashboard
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate("/auth")}
-                    className="text-foreground hover:bg-primary hover:text-primary-foreground transition-all"
-                  >
-                    Entrar
-                  </Button>
-                  <Button
-                    onClick={() => navigate("/auth")}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                  >
-                    Começar
-                  </Button>
-                </>
-              )}
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/auth")}
+                className="text-foreground hover:bg-primary hover:text-primary-foreground transition-all"
+              >
+                Entrar
+              </Button>
+              <Button
+                onClick={() => navigate("/auth")}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                Registrar
+              </Button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -240,30 +226,25 @@ export function HomePage() {
               >
                 Preços
               </a>
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => navigate("/dashboard")}
-                  className="w-full bg-primary hover:bg-primary/90"
-                >
-                  Dashboard
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate("/auth")}
-                    className="w-full text-foreground hover:bg-primary hover:text-primary-foreground transition-all"
-                  >
-                    Entrar
-                  </Button>
-                  <Button
-                    onClick={() => navigate("/auth")}
-                    className="w-full bg-primary hover:bg-primary/90"
-                  >
-                    Começar
-                  </Button>
-                </>
-              )}
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  navigate("/auth");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full text-foreground hover:bg-primary hover:text-primary-foreground transition-all"
+              >
+                Entrar
+              </Button>
+              <Button
+                onClick={() => {
+                  navigate("/auth");
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                Registrar
+              </Button>
             </div>
           )}
         </div>
