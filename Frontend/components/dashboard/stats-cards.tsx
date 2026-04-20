@@ -1,5 +1,4 @@
-import type { MediaFile } from "@/lib/types";
-import { formatFileSize } from "@/lib/mock-data";
+import type { FileResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   HardDrive,
@@ -11,7 +10,15 @@ import {
 } from "lucide-react";
 
 interface StatsCardsProps {
-  files: MediaFile[];
+  files: FileResponse[];
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 export function StatsCards({ files }: StatsCardsProps) {

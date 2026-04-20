@@ -4,6 +4,15 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { mockFiles } from "@/lib/mock-data";
 import type { MediaFile } from "@/lib/types";
+import {
+  listFiles,
+  getDistributionInfo,
+  getMonitoringMetrics,
+  getMonitoringActivity,
+  type FileResponse,
+  type DistributionResponse,
+  type MonitoringMetrics,
+} from "@/lib/api";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { DashboardHeader } from "./dashboard-header";
 import { UploadDropzone } from "./upload-dropzone";
@@ -14,12 +23,19 @@ import { LayoutGrid, List } from "lucide-react";
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [files, setFiles] = useState<MediaFile[]>(mockFiles);
+  const [files, setFiles] = useState<FileResponse[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [distributions, setDistributions] = useState<DistributionResponse[]>(
+    [],
+  );
+  const [metrics, setMetrics] = useState<MonitoringMetrics | null>(null);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [token, setToken] = useState<string | null>(null);
 
   // Verificar se o usuário está autenticado
   useEffect(() => {
@@ -28,34 +44,77 @@ export function DashboardPage() {
     }
   }, [user, navigate]);
 
-  // Simulate short polling for status updates
+  // Extrair token do localStorage
   useEffect(() => {
-    const interval = setInterval(() => {
-      setFiles((prev) =>
-        prev.map((file) => {
-          // Simulate processing completion
-          if (file.status === "processing" && Math.random() > 0.7) {
-            return {
-              ...file,
-              status: "processed" as const,
-              processedAt: new Date(),
-              downloadUrl: `https://cdn.nebula.io/files/${file.name}`,
-            };
-          }
-          // Simulate pending to processing
-          if (file.status === "pending" && Math.random() > 0.8) {
-            return {
-              ...file,
-              status: "processing" as const,
-            };
-          }
-          return file;
-        }),
-      );
-    }, 5000);
-
-    return () => clearInterval(interval);
+    const storedToken = localStorage.getItem("access_token");
+    setToken(storedToken);
   }, []);
+
+  // Buscar arquivos do backend
+  const fetchFiles = useCallback(async () => {
+    if (!token) return;
+    try {
+      setIsLoading(true);
+      const response = await listFiles(token);
+      setFiles(response);
+    } catch (error) {
+      console.error("Erro ao buscar arquivos:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  // Buscar distribuição
+  const fetchDistribution = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await getDistributionInfo(token);
+      setDistributions(response);
+    } catch (error) {
+      console.error("Erro ao buscar distribuição:", error);
+    }
+  }, [token]);
+
+  // Buscar métricas de monitoramento
+  const fetchMetrics = useCallback(async () => {
+    if (!token) return;
+    try {
+      const metricsResponse = await getMonitoringMetrics(token);
+      const activitiesResponse = await getMonitoringActivity(token);
+      setMetrics(metricsResponse);
+      setActivities(activitiesResponse);
+    } catch (error) {
+      console.error("Erro ao buscar métricas:", error);
+    }
+  }, [token]);
+
+  // Efeitos para cada seção
+  useEffect(() => {
+    if (activeSection === "dashboard" || activeSection === "files") {
+      fetchFiles();
+    }
+  }, [activeSection, fetchFiles]);
+
+  useEffect(() => {
+    if (activeSection === "distribution") {
+      fetchDistribution();
+    }
+  }, [activeSection, fetchDistribution]);
+
+  useEffect(() => {
+    if (activeSection === "monitoring") {
+      fetchMetrics();
+    }
+  }, [activeSection, fetchMetrics]);
+
+  // Polling para atualizar status dos arquivos a cada 10 segundos
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => {
+      fetchFiles();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [token, fetchFiles]);
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -65,17 +124,11 @@ export function DashboardPage() {
   }, []);
 
   const handleUploadComplete = useCallback(() => {
-    // Add a new file to the list
-    const newFile: MediaFile = {
-      id: `file_${Date.now()}`,
-      name: `uploaded_file_${Date.now()}.mp4`,
-      size: Math.floor(Math.random() * 1_000_000_000),
-      type: "video/mp4",
-      status: "pending",
-      uploadedAt: new Date(),
-    };
-    setFiles((prev) => [newFile, ...prev]);
-  }, []);
+    // Recarregar arquivos após upload
+    if (token) {
+      fetchFiles();
+    }
+  }, [token, fetchFiles]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -229,117 +282,144 @@ export function DashboardPage() {
               <h2 className="text-lg font-semibold text-foreground mb-4">
                 Edge Locations
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    code: "GRU",
-                    name: "São Paulo",
-                    status: "active",
-                    latency: "12ms",
-                  },
-                  {
-                    code: "IAD",
-                    name: "Virginia",
-                    status: "active",
-                    latency: "89ms",
-                  },
-                  {
-                    code: "FRA",
-                    name: "Frankfurt",
-                    status: "active",
-                    latency: "145ms",
-                  },
-                  {
-                    code: "NRT",
-                    name: "Tokyo",
-                    status: "active",
-                    latency: "215ms",
-                  },
-                  {
-                    code: "SYD",
-                    name: "Sydney",
-                    status: "active",
-                    latency: "280ms",
-                  },
-                  {
-                    code: "CDG",
-                    name: "Paris",
-                    status: "active",
-                    latency: "152ms",
-                  },
-                ].map((location) => (
-                  <div
-                    key={location.code}
-                    className="p-4 rounded-lg bg-muted/30 border border-border"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-sm text-primary">
-                        {location.code}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                        <span className="text-xs text-success">Ativo</span>
+              {isLoading ? (
+                <p className="text-muted-foreground">
+                  Carregando distribuição...
+                </p>
+              ) : distributions.length === 0 ? (
+                <p className="text-muted-foreground">
+                  Nenhuma distribuição disponível
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {distributions.map((location) => (
+                    <div
+                      key={location.code}
+                      className="p-4 rounded-lg bg-muted/30 border border-border"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono text-sm text-primary">
+                          {location.code}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className={cn(
+                              "w-2 h-2 rounded-full",
+                              location.status === "active"
+                                ? "bg-success animate-pulse"
+                                : "bg-muted",
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "text-xs",
+                              location.status === "active"
+                                ? "text-success"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {location.status === "active" ? "Ativo" : "Inativo"}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-foreground">{location.name}</p>
+                      <div className="text-xs text-muted-foreground mt-2 space-y-1">
+                        <p>Latência: {location.latency}ms</p>
+                        <p>Banda: {location.bandwidth}</p>
+                        <p>Requisições: {location.requests}</p>
                       </div>
                     </div>
-                    <p className="text-sm text-foreground">{location.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Latência: {location.latency}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Monitoring section */}
           {activeSection === "monitoring" && (
-            <div className="glass-light rounded-lg p-6 border border-border">
-              <h2 className="text-lg font-semibold text-foreground mb-4">
-                Status do Sistema
-              </h2>
-              <div className="space-y-4">
-                {[
-                  {
-                    name: "S3 Storage",
-                    status: "operational",
-                    uptime: "99.99%",
-                  },
-                  {
-                    name: "Lambda Processing",
-                    status: "operational",
-                    uptime: "99.95%",
-                  },
-                  {
-                    name: "CloudFront CDN",
-                    status: "operational",
-                    uptime: "100%",
-                  },
-                  {
-                    name: "API Gateway",
-                    status: "operational",
-                    uptime: "99.98%",
-                  },
-                ].map((service) => (
-                  <div
-                    key={service.name}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-success" />
-                      <span className="text-sm text-foreground">
-                        {service.name}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-success font-medium">
-                        Operacional
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Uptime: {service.uptime}
-                      </p>
-                    </div>
+            <div className="space-y-6">
+              {/* Metrics Cards */}
+              {metrics && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="glass-light rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Total de Uploads
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {metrics.totalUploads}
+                    </p>
                   </div>
-                ))}
+                  <div className="glass-light rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Taxa de Sucesso
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {(
+                        (metrics.successfulUploads / metrics.totalUploads) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </p>
+                  </div>
+                  <div className="glass-light rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Tempo Médio
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {metrics.averageProcessingTime.toFixed(2)}s
+                    </p>
+                  </div>
+                  <div className="glass-light rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Banda Total
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {(metrics.totalBandwidthUsed / 1024 ** 3).toFixed(2)}GB
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity Log */}
+              <div className="glass-light rounded-lg p-6 border border-border">
+                <h2 className="text-lg font-semibold text-foreground mb-4">
+                  Atividades Recentes
+                </h2>
+                {activities.length === 0 ? (
+                  <p className="text-muted-foreground">
+                    Nenhuma atividade registrada
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {activities.slice(0, 5).map((activity, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">
+                            {activity.type || "Atividade"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <div
+                          className={cn(
+                            "px-2 py-1 rounded text-xs font-medium",
+                            activity.status === "success"
+                              ? "bg-success/20 text-success"
+                              : activity.status === "error"
+                                ? "bg-destructive/20 text-destructive"
+                                : "bg-warning/20 text-warning",
+                          )}
+                        >
+                          {activity.status}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

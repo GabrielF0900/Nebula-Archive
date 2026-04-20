@@ -241,3 +241,79 @@ export async function getDownloadUrl(
   const data = await response.json();
   return data.downloadUrl;
 }
+
+/**
+ * Obter estatísticas de distribuição
+ */
+export async function getDistributionStats(token: string): Promise<any> {
+  const response = await fetch(`${API_URL}/distribution/stats`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(
+      error.message || "Erro ao obter estatísticas de distribuição",
+    );
+  }
+
+  return response.json();
+}
+
+/**
+ * Obter atividades de monitoramento
+ */
+export async function getMonitoringActivity(token: string): Promise<any[]> {
+  const response = await fetch(`${API_URL}/monitoring/activity`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao obter atividades");
+  }
+
+  return response.json();
+}
+
+/**
+ * Obter estatísticas de bandwidth
+ */
+export async function getBandwidthStats(token: string): Promise<any> {
+  const response = await fetch(`${API_URL}/monitoring/bandwidth`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao obter estatísticas de bandwidth");
+  }
+
+  return response.json();
+}
+
+/**
+ * Obter estatísticas de performance
+ */
+export async function getPerformanceStats(token: string): Promise<any> {
+  const response = await fetch(`${API_URL}/monitoring/performance`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(
+      error.message || "Erro ao obter estatísticas de performance",
+    );
+  }
+
+  return response.json();
+}

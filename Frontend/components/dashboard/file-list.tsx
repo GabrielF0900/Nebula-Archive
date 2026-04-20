@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatFileSize, formatDuration } from "@/lib/mock-data";
-import type { MediaFile } from "@/lib/types";
+import type { FileResponse } from "@/lib/api";
 import { FileStatusBadge } from "./file-status-badge";
 import { FileMetadataModal } from "./file-metadata-modal";
 import { Button } from "@/components/ui/button";
@@ -28,9 +27,21 @@ import {
 } from "lucide-react";
 
 interface FileListProps {
-  files: MediaFile[];
+  files: FileResponse[];
   onRefresh?: () => void;
   isRefreshing?: boolean;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+function formatDate(date: string | Date): string {
+  return new Date(date).toLocaleDateString("pt-BR");
 }
 
 function getFileIcon(type: string) {
@@ -43,7 +54,7 @@ function getFileIcon(type: string) {
 }
 
 export function FileList({ files, onRefresh, isRefreshing }: FileListProps) {
-  const [selectedFile, setSelectedFile] = useState<MediaFile | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileResponse | null>(null);
 
   return (
     <>
@@ -101,22 +112,12 @@ export function FileList({ files, onRefresh, isRefreshing }: FileListProps) {
                     </div>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{formatFileSize(file.size)}</span>
-                      {file.metadata?.duration && (
-                        <span>{formatDuration(file.metadata.duration)}</span>
-                      )}
                       {file.metadata?.width && file.metadata?.height && (
                         <span>
                           {file.metadata.width}×{file.metadata.height}
                         </span>
                       )}
-                      <span>
-                        {file.uploadedAt.toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+                      <span>{formatDate(file.uploadedAt)}</span>
                     </div>
                     {file.edgeLocation && (
                       <div className="flex items-center gap-1.5 mt-1 text-xs text-primary">
