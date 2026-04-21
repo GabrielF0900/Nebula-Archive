@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { useNotification } from "@/hooks/use-notification";
@@ -27,6 +27,10 @@ interface UploadDropzoneProps {
   onUploadComplete?: () => void;
 }
 
+interface FileWithPath extends File {
+  webkitRelativePath?: string;
+}
+
 const uploadStatusLabels = {
   "generating-url": "Gerando URL segura...",
   uploading: "Fazendo upload...",
@@ -41,9 +45,11 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const token = localStorage.getItem("access_token");
   const [isDragging, setIsDragging] = useState(false);
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
-    async (file: File) => {
+    async (file: FileWithPath, folderPath?: string) => {
       if (!token) {
         console.error("Usuário não autenticado");
         const notification = NotificationTemplates.upload.uploadError(
@@ -54,29 +60,35 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         return;
       }
 
+      // Usar o caminho relativo da pasta ou o nome do arquivo
+      const displayName = folderPath || file.name;
+
       // Mostrar notificação de início do upload
-      const startNotification = NotificationTemplates.upload.uploadStart(
-        file.name,
-      );
+      const startNotification =
+        NotificationTemplates.upload.uploadStart(displayName);
       notify(startNotification);
 
       // Adicionar ao estado de uploads
       setUploads((prev) => [
         ...prev,
-        { file, progress: 0, status: "generating-url" },
+        {
+          file: { ...file, name: displayName },
+          progress: 0,
+          status: "generating-url",
+        },
       ]);
 
       try {
         // 1. Gerar URL de upload assinada
         const { uploadUrl, fileKey } = await generateUploadUrl(
-          file.name,
+          displayName,
           file.type,
           token,
         );
 
         setUploads((prev) =>
           prev.map((u) =>
-            u.file.name === file.name && u.status === "generating-url"
+            u.file.name === displayName && u.status === "generating-url"
               ? { ...u, progress: 10, status: "uploading" }
               : u,
           ),
@@ -86,7 +98,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         await uploadFileToS3(uploadUrl, file, (progress) => {
           setUploads((prev) =>
             prev.map((u) =>
-              u.file.name === file.name && u.status === "uploading"
+              u.file.name === displayName && u.status === "uploading"
                 ? { ...u, progress: Math.min(10 + progress * 0.7, 85) }
                 : u,
             ),
@@ -96,7 +108,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         // 3. Validar integridade
         setUploads((prev) =>
           prev.map((u) =>
-            u.file.name === file.name && u.status === "uploading"
+            u.file.name === displayName && u.status === "uploading"
               ? { ...u, progress: 95, status: "validating" }
               : u,
           ),
@@ -105,7 +117,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         // 4. Registrar metadados no banco de dados
         await registerFileMetadata(
           {
-            name: file.name,
+            name: displayName,
             size: file.size,
             type: file.type,
             fileKey,
@@ -116,21 +128,20 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         // 5. Marcar como concluído
         setUploads((prev) =>
           prev.map((u) =>
-            u.file.name === file.name && u.status === "validating"
+            u.file.name === displayName && u.status === "validating"
               ? { ...u, progress: 100, status: "complete" }
               : u,
           ),
         );
 
         // Mostrar notificação de sucesso
-        const successNotification = NotificationTemplates.upload.uploadSuccess(
-          file.name,
-        );
+        const successNotification =
+          NotificationTemplates.upload.uploadSuccess(displayName);
         notify(successNotification);
 
         // Remover da lista após 2 segundos
         setTimeout(() => {
-          setUploads((prev) => prev.filter((u) => u.file.name !== file.name));
+          setUploads((prev) => prev.filter((u) => u.file.name !== displayName));
           onUploadComplete?.();
         }, 2000);
       } catch (error) {
@@ -140,14 +151,14 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
 
         // Mostrar notificação de erro
         const errorNotification = NotificationTemplates.upload.uploadError(
-          file.name,
+          displayName,
           errorMessage,
         );
         notify(errorNotification);
 
         setUploads((prev) =>
           prev.map((u) =>
-            u.file.name === file.name
+            u.file.name === displayName
               ? {
                   ...u,
                   status: "error",
@@ -166,8 +177,53 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
       e.preventDefault();
       setIsDragging(false);
 
-      const files = Array.from(e.dataTransfer.files);
-      files.forEach((file) => handleUpload(file));
+      const items = e.dataTransfer.items;
+      if (items) {
+        // Usar DataTransferItemList API para processar pastas
+        const processItems = async (items: DataTransferItemList) => {
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.kind === "file") {
+              const entry = item.webkitGetAsEntry();
+              if (entry?.isDirectory) {
+                // Processar diretório
+                await processDirectory(entry as FileSystemDirectoryEntry);
+              } else {
+                // Processar arquivo individual
+                const file = item.getAsFile();
+                if (file) handleUpload(file as FileWithPath);
+              }
+            }
+          }
+        };
+        processItems(items);
+      } else {
+        // Fallback para navegadores que não suportam DataTransferItemList
+        const files = Array.from(e.dataTransfer.files);
+        files.forEach((file) => handleUpload(file as FileWithPath));
+      }
+    },
+    [handleUpload],
+  );
+
+  const processDirectory = useCallback(
+    async (entry: FileSystemDirectoryEntry, path = "") => {
+      const reader = entry.createReader();
+      const entries = await new Promise<FileSystemEntry[]>((resolve) => {
+        reader.readEntries(resolve);
+      });
+
+      for (const entry of entries) {
+        const newPath = path ? `${path}/${entry.name}` : entry.name;
+        if (entry.isDirectory) {
+          await processDirectory(entry as FileSystemDirectoryEntry, newPath);
+        } else {
+          const file = await new Promise<File>((resolve) => {
+            (entry as FileSystemFileEntry).file(resolve);
+          });
+          handleUpload(file as FileWithPath, newPath);
+        }
+      }
     },
     [handleUpload],
   );
@@ -175,8 +231,27 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
-      files.forEach((file) => handleUpload(file));
-      e.target.value = "";
+      files.forEach((file: FileWithPath) => {
+        handleUpload(file);
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [handleUpload],
+  );
+
+  const handleFolderSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      files.forEach((file: FileWithPath) => {
+        // webkitRelativePath contém o caminho relativo da pasta
+        const folderPath = file.webkitRelativePath;
+        handleUpload(file, folderPath);
+      });
+      if (folderInputRef.current) {
+        folderInputRef.current.value = "";
+      }
     },
     [handleUpload],
   );
@@ -187,6 +262,25 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
 
   return (
     <div className="space-y-4">
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileSelect}
+        className="hidden"
+        aria-label="Upload files"
+      />
+      <input
+        ref={folderInputRef}
+        type="file"
+        webkitdirectory={true}
+        multiple
+        onChange={handleFolderSelect}
+        className="hidden"
+        aria-label="Upload folder"
+      />
+
       {/* Dropzone */}
       <div
         onDragOver={(e) => {
@@ -196,21 +290,13 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         className={cn(
-          "relative border border-dashed rounded-lg p-8 transition-all duration-200",
+          "border border-dashed rounded-lg p-8 transition-all duration-200",
           "flex flex-col items-center justify-center text-center",
           isDragging
             ? "border-primary bg-primary/5 glow-cyan"
             : "border-border hover:border-muted-foreground/50",
         )}
       >
-        <input
-          type="file"
-          multiple
-          onChange={handleFileSelect}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          aria-label="Upload files"
-        />
-
         <div
           className={cn(
             "w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-colors",
@@ -226,21 +312,34 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
 
         <h3 className="text-sm font-medium text-foreground mb-1">
           {isDragging
-            ? "Solte os arquivos aqui"
-            : "Arraste arquivos ou clique para selecionar"}
+            ? "Solte os arquivos ou pastas aqui"
+            : "Arraste arquivos ou pastas, ou clique para selecionar"}
         </h3>
         <p className="text-xs text-muted-foreground mb-4">
-          Upload direto via S3 Presigned URLs • Até 5GB por arquivo
+          Upload direto via S3 Presigned URLs • Até 5GB por arquivo • Pastas
+          suportadas
         </p>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-border hover:bg-muted"
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          Selecionar arquivos
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border hover:bg-muted"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Selecionar arquivos
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-border hover:bg-muted"
+            onClick={() => folderInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Selecionar pasta
+          </Button>
+        </div>
 
         {/* Security indicator */}
         <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
