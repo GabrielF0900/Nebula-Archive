@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Loader2,
   Shield,
+  Folder,
 } from "lucide-react";
 
 interface UploadDropzoneProps {
@@ -29,6 +30,21 @@ interface UploadDropzoneProps {
 
 interface FileWithPath extends File {
   webkitRelativePath?: string;
+}
+
+interface FolderUploadItem {
+  folderName: string;
+  files: FileWithPath[];
+  totalSize: number;
+  uploadedSize: number;
+  progress: number;
+  status: "pending" | "uploading" | "complete" | "error";
+  completedFiles: number;
+  errorMessage?: string;
+}
+
+interface CombinedUploadItem extends UploadProgress {
+  folderName?: string;
 }
 
 const uploadStatusLabels = {
@@ -45,6 +61,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const token = localStorage.getItem("access_token");
   const [isDragging, setIsDragging] = useState(false);
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
+  const [folderUploads, setFolderUploads] = useState<FolderUploadItem[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
@@ -241,6 +258,129 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
     [handleUpload],
   );
 
+  const handleFolderUpload = useCallback(
+    async (folderItem: FolderUploadItem) => {
+      if (!token) {
+        console.error("Usuário não autenticado");
+        notify({
+          type: "error",
+          title: "Erro",
+          description: "Usuário não autenticado",
+          duration: 3000,
+        });
+        return;
+      }
+
+      // Atualizar status para uploading
+      setFolderUploads((prev) =>
+        prev.map((f) =>
+          f.folderName === folderItem.folderName
+            ? { ...f, status: "uploading" }
+            : f
+        )
+      );
+
+      let completedFiles = 0;
+      let failedFiles = 0;
+      let uploadedSize = 0;
+
+      // Processar cada arquivo da pasta
+      for (const file of folderItem.files) {
+        try {
+          const filePath = file.webkitRelativePath || file.name;
+
+          // Gerar URL de upload
+          const { uploadUrl, fileKey } = await generateUploadUrl(
+            filePath,
+            file.type,
+            token,
+          );
+
+          // Fazer upload do arquivo
+          await uploadFileToS3(uploadUrl, file, (progress) => {
+            uploadedSize = uploadedSize + progress * file.size;
+            const totalProgress = Math.round(
+              (uploadedSize / folderItem.totalSize) * 100
+            );
+
+            setFolderUploads((prev) =>
+              prev.map((f) =>
+                f.folderName === folderItem.folderName
+                  ? {
+                      ...f,
+                      progress: totalProgress,
+                      uploadedSize: uploadedSize,
+                    }
+                  : f
+              )
+            );
+          });
+
+          // Registrar metadados
+          await registerFileMetadata(
+            {
+              name: filePath,
+              size: file.size,
+              type: file.type,
+              fileKey,
+            },
+            token,
+          );
+
+          completedFiles++;
+        } catch (error) {
+          console.error(`Erro ao fazer upload de ${file.name}:`, error);
+          failedFiles++;
+        }
+      }
+
+      // Atualizar status final
+      const finalStatus = failedFiles === 0 ? "complete" : "error";
+      setFolderUploads((prev) =>
+        prev.map((f) =>
+          f.folderName === folderItem.folderName
+            ? {
+                ...f,
+                status: finalStatus,
+                completedFiles,
+                progress: 100,
+                errorMessage:
+                  failedFiles > 0
+                    ? `${failedFiles} arquivo(s) falharam`
+                    : undefined,
+              }
+            : f
+        )
+      );
+
+      // Notificação final
+      if (failedFiles === 0) {
+        notify({
+          type: "success",
+          title: "Pasta enviada!",
+          description: `${completedFiles} arquivo(s) de "${folderItem.folderName}" enviados com sucesso`,
+          duration: 3000,
+        });
+      } else {
+        notify({
+          type: "warning",
+          title: "Envio parcial",
+          description: `${completedFiles} arquivo(s) enviados, ${failedFiles} erro(s)`,
+          duration: 4000,
+        });
+      }
+
+      // Limpar após 2 segundos
+      setTimeout(() => {
+        setFolderUploads((prev) =>
+          prev.filter((f) => f.folderName !== folderItem.folderName)
+        );
+        onUploadComplete?.();
+      }, 2000);
+    },
+    [token, notify, onUploadComplete]
+  );
+
   const openFolderDialog = useCallback(() => {
     // Criar um input dinamicamente para garantir que funcione
     const input = document.createElement("input");
@@ -259,15 +399,31 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
       const filesArray = Array.from(fileList) as FileWithPath[];
       console.log(`Processando ${filesArray.length} arquivo(s) da pasta`);
 
-      filesArray.forEach((file: FileWithPath) => {
-        const folderPath = file.webkitRelativePath || file.name;
-        console.log(`Upload de arquivo com caminho: ${folderPath}`);
-        handleUpload(file, folderPath);
-      });
+      // Extrair nome da pasta do primeiro arquivo
+      const firstFilePath = filesArray[0].webkitRelativePath || filesArray[0].name;
+      const folderName = firstFilePath.split("/")[0];
+
+      // Calcular tamanho total
+      const totalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
+
+      // Criar item de pasta
+      const folderItem: FolderUploadItem = {
+        folderName,
+        files: filesArray,
+        totalSize,
+        uploadedSize: 0,
+        progress: 0,
+        status: "pending",
+        completedFiles: 0,
+      };
+
+      // Adicionar à lista e iniciar upload
+      setFolderUploads((prev) => [...prev, folderItem]);
+      handleFolderUpload(folderItem);
     };
 
     input.click();
-  }, [handleUpload]);
+  }, [handleFolderUpload]);
 
   const removeUpload = (fileName: string) => {
     setUploads((prev) => prev.filter((u) => u.file.name !== fileName));
@@ -409,6 +565,80 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
                   "h-1",
                   upload.status === "complete" && "[&>div]:bg-success",
                   upload.status === "error" && "[&>div]:bg-destructive",
+                )}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Folder uploads */}
+      {folderUploads.length > 0 && (
+        <div className="space-y-2">
+          {folderUploads.map((folderUpload) => (
+            <div
+              key={folderUpload.folderName}
+              className="glass-light rounded-md p-4"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0",
+                      folderUpload.status === "complete"
+                        ? "bg-success/20"
+                        : folderUpload.status === "error"
+                          ? "bg-destructive/20"
+                          : "bg-primary/20",
+                    )}
+                  >
+                    {folderUpload.status === "complete" ? (
+                      <CheckCircle className="h-4 w-4 text-success" />
+                    ) : folderUpload.status === "error" ? (
+                      <AlertCircle className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <p className="text-sm font-medium text-foreground truncate">
+                        {folderUpload.folderName}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {folderUpload.completedFiles}/{folderUpload.files.length}{" "}
+                      arquivos • {formatFileSize(folderUpload.totalSize)} •{" "}
+                      {folderUpload.status === "error"
+                        ? folderUpload.errorMessage || "Erro no upload"
+                        : folderUpload.status === "complete"
+                          ? "Concluído"
+                          : folderUpload.status === "uploading"
+                            ? "Fazendo upload..."
+                            : "Pendente"}
+                    </p>
+                  </div>
+                </div>
+                {folderUpload.status !== "complete" && (
+                  <button
+                    onClick={() =>
+                      setFolderUploads((prev) =>
+                        prev.filter((f) => f.folderName !== folderUpload.folderName)
+                      )
+                    }
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Progress
+                value={folderUpload.progress}
+                className={cn(
+                  "h-1",
+                  folderUpload.status === "complete" && "[&>div]:bg-success",
+                  folderUpload.status === "error" && "[&>div]:bg-destructive",
                 )}
               />
             </div>
