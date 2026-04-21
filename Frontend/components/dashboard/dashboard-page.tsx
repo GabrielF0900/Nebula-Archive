@@ -240,11 +240,11 @@ export function DashboardPage() {
                 <UploadDropzone onUploadComplete={handleUploadComplete} />
               </div>
 
-              {/* Recent files */}
+              {/* All files with pagination */}
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-foreground">
-                    Arquivos Recentes
+                    Todos os Arquivos
                   </h2>
                   <div className="flex items-center gap-2">
                     <button
@@ -272,9 +272,7 @@ export function DashboardPage() {
                   </div>
                 </div>
                 <FileList
-                  files={files
-                    .filter((f) => f.status !== "deleted")
-                    .slice(0, 5)}
+                  files={files.filter((f) => f.status !== "deleted")}
                   onRefresh={handleRefresh}
                   isRefreshing={isRefreshing}
                   onDelete={handleDeleteFile}
