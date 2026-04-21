@@ -1,0 +1,7 @@
+node_modules
+.pnpm-debug.log
+dist
+.env
+.git
+Dockerfile
+docker-compose.yml
