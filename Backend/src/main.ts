@@ -31,7 +31,7 @@ async function bootstrap() {
   console.log('🚀 O SISTEMA DE VALIDAÇÃO ESTÁ SENDO ATIVADO AGORA!');
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(3000, '0.0.0.0');
   console.log(`Servidor rodando em http://localhost:${port}/api`);
 }
 bootstrap();
