@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useNotification } from "@/hooks/use-notification";
+import { NotificationTemplates } from "@/lib/notification-service";
 import { mockFiles } from "@/lib/mock-data";
 import type { MediaFile } from "@/lib/types";
 import {
@@ -26,7 +28,9 @@ import { LayoutGrid, List } from "lucide-react";
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isLoading } = useAuth();
+  const { notify } = useNotification();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [files, setFiles] = useState<FileResponse[]>([]);
@@ -39,6 +43,18 @@ export function DashboardPage() {
   const [metrics, setMetrics] = useState<MonitoringMetrics | null>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [token, setToken] = useState<string | null>(null);
+
+  // Inicializar activeSection baseado na rota
+  useEffect(() => {
+    const pathSegments = location.pathname.split("/");
+    const lastSegment = pathSegments[pathSegments.length - 1];
+
+    if (lastSegment === "profile" || lastSegment === "settings") {
+      setActiveSection(lastSegment);
+    } else if (lastSegment === "dashboard" || lastSegment === "") {
+      setActiveSection("dashboard");
+    }
+  }, [location.pathname]);
 
   // Mostrar loading enquanto carrega o usuário
   if (isLoading) {
@@ -142,14 +158,30 @@ export function DashboardPage() {
       if (!token) return;
       try {
         await deleteFile(fileId, token);
+        const notification = NotificationTemplates.upload.uploadSuccess(
+          "Arquivo excluído com sucesso",
+        );
+        notify({
+          type: "success",
+          title: notification.title,
+          description: "O arquivo foi removido permanentemente",
+          duration: notification.duration,
+        });
         // Recarregar lista de arquivos após deletar
         await fetchFiles();
       } catch (error) {
         console.error("Erro ao deletar arquivo:", error);
-        alert("Erro ao deletar arquivo");
+        const errorMessage =
+          error instanceof Error ? error.message : "Erro desconhecido";
+        notify({
+          type: "error",
+          title: "Erro ao excluir arquivo",
+          description: errorMessage,
+          duration: 5000,
+        });
       }
     },
-    [token, fetchFiles],
+    [token, fetchFiles, notify],
   );
 
   return (

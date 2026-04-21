@@ -4,7 +4,7 @@ import { AuthProvider } from "./lib/auth-context";
 import { HomePage } from "./components/home/home-page";
 import { AuthPage } from "./components/auth/auth-page";
 import { DashboardPage } from "./components/dashboard/dashboard-page";
-import { Toaster } from "./components/ui/toaster";
+import { Toaster } from "./components/ui/sonner";
 import { ProtectedRoute } from "./components/routes/protected-route";
 import { AuthRoute } from "./components/routes/auth-route";
 
@@ -22,6 +22,22 @@ function AppRoutes() {
       />
       <Route
         path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/profile"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard/settings"
         element={
           <ProtectedRoute>
             <DashboardPage />

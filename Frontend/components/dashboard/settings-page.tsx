@@ -1,6 +1,14 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import { useNotification } from "@/hooks/use-notification";
+import { NotificationTemplates } from "@/lib/notification-service";
+import {
+  updateUsername,
+  updateEmail,
+  updatePassword,
+  deleteUserAccount,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,11 +24,10 @@ import {
 import { Lock, User, Trash2, AlertTriangle, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-
 export function SettingsPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { notify } = useNotification();
   const token = localStorage.getItem("access_token");
 
   // Update Username
@@ -65,34 +72,27 @@ export function SettingsPage() {
     setUsernameSuccess("");
 
     try {
-      const response = await fetch(`${API_URL}/users/update-username`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ username: newUsername }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao atualizar nome");
-      }
-
-      setUsernameSuccess("Nome de usuário atualizado com sucesso!");
+      await updateUsername(newUsername, token!);
+      const notification = NotificationTemplates.settings.updateSuccess(
+        "informações de usuário",
+      );
+      notify(notification);
       setNewUsername("");
 
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (error) {
-      setUsernameError(
-        error instanceof Error ? error.message : "Erro ao atualizar nome",
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao atualizar nome";
+      setUsernameError(errorMessage);
+      const notification =
+        NotificationTemplates.settings.updateError("nome de usuário");
+      notify(notification);
     } finally {
       setIsUpdatingUsername(false);
     }
-  }, [newUsername, token]);
+  }, [newUsername, token, notify]);
 
   // Handle Update Email
   const handleUpdateEmail = useCallback(async () => {
@@ -112,34 +112,25 @@ export function SettingsPage() {
     setEmailSuccess("");
 
     try {
-      const response = await fetch(`${API_URL}/users/update-email`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: newEmail }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao atualizar email");
-      }
-
-      setEmailSuccess("Email atualizado com sucesso!");
+      await updateEmail(newEmail, token!);
+      const notification =
+        NotificationTemplates.settings.updateSuccess("email");
+      notify(notification);
       setNewEmail("");
 
       setTimeout(() => {
         window.location.reload();
       }, 1500);
     } catch (error) {
-      setEmailError(
-        error instanceof Error ? error.message : "Erro ao atualizar email",
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao atualizar email";
+      setEmailError(errorMessage);
+      const notification = NotificationTemplates.settings.updateError("email");
+      notify(notification);
     } finally {
       setIsUpdatingEmail(false);
     }
-  }, [newEmail, token]);
+  }, [newEmail, token, notify]);
 
   // Update password
   const handleUpdatePassword = useCallback(async () => {
@@ -174,35 +165,23 @@ export function SettingsPage() {
     setIsUpdatingPassword(true);
 
     try {
-      const response = await fetch(`${API_URL}/users/update-password`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao atualizar senha");
-      }
-
-      setPasswordSuccess("Senha atualizada com sucesso!");
+      await updatePassword(currentPassword, newPassword, token!);
+      const notification =
+        NotificationTemplates.settings.updateSuccess("senha");
+      notify(notification);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (error) {
-      setPasswordError(
-        error instanceof Error ? error.message : "Erro ao atualizar senha",
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao atualizar senha";
+      setPasswordError(errorMessage);
+      const notification = NotificationTemplates.settings.updateError("senha");
+      notify(notification);
     } finally {
       setIsUpdatingPassword(false);
     }
-  }, [currentPassword, newPassword, confirmPassword, token]);
+  }, [currentPassword, newPassword, confirmPassword, token, notify]);
 
   // Delete account
   const handleDeleteAccount = useCallback(async () => {
@@ -217,27 +196,27 @@ export function SettingsPage() {
     setPasswordError("");
 
     try {
-      const response = await fetch(`${API_URL}/users/delete-account`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao deletar conta");
-      }
-
-      logout();
-      navigate("/", { replace: true });
+      await deleteUserAccount(token!);
+      const notification =
+        NotificationTemplates.settings.deleteAccountSuccess();
+      notify(notification);
+      setTimeout(() => {
+        logout();
+        navigate("/", { replace: true });
+      }, 1500);
     } catch (error) {
-      setPasswordError(
-        error instanceof Error ? error.message : "Erro ao deletar conta",
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro ao deletar conta";
+      setPasswordError(errorMessage);
+      notify({
+        type: "error",
+        title: "Erro ao deletar conta",
+        description: errorMessage,
+        duration: 5000,
+      });
       setIsDeletingAccount(false);
     }
-  }, [deleteConfirmation, user?.username, token, logout, navigate]);
+  }, [deleteConfirmation, user?.username, token, logout, navigate, notify]);
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">

@@ -331,3 +331,100 @@ export async function getPerformanceStats(token: string): Promise<any> {
 
   return response.json();
 }
+
+/**
+ * Atualizar nome de usuário
+ */
+export async function updateUsername(
+  username: string,
+  token: string,
+): Promise<User> {
+  const response = await fetch(`${API_URL}/users/update-username`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ username }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao atualizar nome de usuário");
+  }
+
+  return response.json();
+}
+
+/**
+ * Atualizar email
+ */
+export async function updateEmail(email: string, token: string): Promise<User> {
+  const response = await fetch(`${API_URL}/users/update-email`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao atualizar email");
+  }
+
+  return response.json();
+}
+
+/**
+ * Atualizar senha
+ */
+export async function updatePassword(
+  currentPassword: string,
+  newPassword: string,
+  token: string,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/users/update-password`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao atualizar senha");
+  }
+
+  return response.json();
+}
+
+/**
+ * Deletar conta do usuário
+ */
+export async function deleteUserAccount(
+  token: string,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/users/delete-account`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao deletar conta");
+  }
+
+  return response.json();
+}
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+}

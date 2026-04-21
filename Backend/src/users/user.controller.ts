@@ -49,6 +49,16 @@ export class UsersController {
     );
   }
 
+  @Put('update-email')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateEmail(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { email: string },
+  ) {
+    return this.usersService.updateEmail(req.user.userId, body.email);
+  }
+
   @Delete('delete-account')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)

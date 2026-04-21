@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { useNotification } from "@/hooks/use-notification";
+import { NotificationTemplates } from "@/lib/notification-service";
 import { formatFileSize } from "@/lib/mock-data";
 import {
   generateUploadUrl,
@@ -35,6 +37,7 @@ const uploadStatusLabels = {
 
 export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const { user } = useAuth();
+  const { notify } = useNotification();
   const token = localStorage.getItem("access_token");
   const [isDragging, setIsDragging] = useState(false);
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
@@ -43,8 +46,19 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
     async (file: File) => {
       if (!token) {
         console.error("Usuário não autenticado");
+        const notification = NotificationTemplates.upload.uploadError(
+          file.name,
+          "Usuário não autenticado",
+        );
+        notify(notification);
         return;
       }
+
+      // Mostrar notificação de início do upload
+      const startNotification = NotificationTemplates.upload.uploadStart(
+        file.name,
+      );
+      notify(startNotification);
 
       // Adicionar ao estado de uploads
       setUploads((prev) => [
@@ -108,6 +122,12 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
           ),
         );
 
+        // Mostrar notificação de sucesso
+        const successNotification = NotificationTemplates.upload.uploadSuccess(
+          file.name,
+        );
+        notify(successNotification);
+
         // Remover da lista após 2 segundos
         setTimeout(() => {
           setUploads((prev) => prev.filter((u) => u.file.name !== file.name));
@@ -115,23 +135,30 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         }, 2000);
       } catch (error) {
         console.error("Erro no upload:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Erro desconhecido";
+
+        // Mostrar notificação de erro
+        const errorNotification = NotificationTemplates.upload.uploadError(
+          file.name,
+          errorMessage,
+        );
+        notify(errorNotification);
+
         setUploads((prev) =>
           prev.map((u) =>
             u.file.name === file.name
               ? {
                   ...u,
                   status: "error",
-                  error:
-                    error instanceof Error
-                      ? error.message
-                      : "Erro desconhecido",
+                  error: errorMessage,
                 }
               : u,
           ),
         );
       }
     },
-    [token, onUploadComplete],
+    [token, onUploadComplete, notify],
   );
 
   const handleDrop = useCallback(

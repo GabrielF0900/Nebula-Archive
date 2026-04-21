@@ -81,11 +81,11 @@ export function DashboardHeader({ sidebarCollapsed }: DashboardHeaderProps) {
                 <p className="text-xs text-muted-foreground">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/profile")}>
                 <User className="h-4 w-4 mr-2" />
                 Perfil
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/dashboard/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 Configurações
               </DropdownMenuItem>

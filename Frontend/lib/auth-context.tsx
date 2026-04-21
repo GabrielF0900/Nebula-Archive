@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import type { User, AuthState } from "./types";
+import { useNotification } from "@/hooks/use-notification";
+import { NotificationTemplates } from "@/lib/notification-service";
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -27,6 +29,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 console.log("API URL:", API_URL);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { notify } = useNotification();
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -118,12 +121,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!success) {
           throw new Error("Falha ao carregar perfil do usuário");
         }
+
+        // Mostrar notificação de sucesso
+        const state = await loadUserProfile(token);
+        if (state) {
+          const notificationUser = JSON.parse(
+            localStorage.getItem("user") || "{}",
+          );
+          const notification = NotificationTemplates.auth.loginSuccess(
+            notificationUser.username || email,
+          );
+          notify(notification);
+        }
       } catch (error) {
         setState((prev) => ({ ...prev, isLoading: false }));
+        const errorMessage =
+          error instanceof Error ? error.message : "Erro desconhecido";
+        const notification =
+          NotificationTemplates.auth.loginError(errorMessage);
+        notify(notification);
         throw error;
       }
     },
-    [loadUserProfile],
+    [loadUserProfile, notify],
   );
 
   const register = useCallback(
@@ -155,12 +175,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!success) {
           throw new Error("Falha ao carregar perfil do usuário");
         }
+
+        // Mostrar notificação de sucesso
+        const notification =
+          NotificationTemplates.auth.registerSuccess(username);
+        notify(notification);
       } catch (error) {
         setState((prev) => ({ ...prev, isLoading: false }));
+        const errorMessage =
+          error instanceof Error ? error.message : "Erro desconhecido";
+        const notification =
+          NotificationTemplates.auth.registerError(errorMessage);
+        notify(notification);
         throw error;
       }
     },
-    [loadUserProfile],
+    [loadUserProfile, notify],
   );
 
   const logout = useCallback(() => {
@@ -170,7 +200,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: false,
       isLoading: false,
     });
-  }, []);
+
+    // Mostrar notificação de logout
+    const notification = NotificationTemplates.auth.logoutSuccess();
+    notify(notification);
+  }, [notify]);
 
   const resetPassword = useCallback(async (email: string) => {
     setState((prev) => ({ ...prev, isLoading: true }));

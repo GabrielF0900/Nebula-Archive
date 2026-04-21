@@ -101,6 +101,39 @@ export class UsersService {
     return { message: 'Senha atualizada com sucesso' };
   }
 
+  // Atualizar email
+  async updateEmail(
+    id: string | number,
+    email: string,
+  ): Promise<Omit<User, 'password'>> {
+    if (!email || email.length === 0) {
+      throw new BadRequestException('Email não pode estar vazio');
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new BadRequestException('Email inválido');
+    }
+
+    // Verifica se email já existe
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser && existingUser.id !== Number(id)) {
+      throw new ConflictException('Email já está em uso');
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: Number(id) },
+      data: { email },
+    });
+
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
   // Deletar conta
   async deleteAccount(id: string | number): Promise<{ message: string }> {
     const user = await this.prisma.user.findUnique({
