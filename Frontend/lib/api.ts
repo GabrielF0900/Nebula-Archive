@@ -10,6 +10,8 @@ export interface FileMetadataRequest {
   size: number;
   type: string;
   fileKey: string;
+  folderPath?: string;
+  isFolder?: boolean;
 }
 
 export interface FileResponse {
@@ -24,6 +26,8 @@ export interface FileResponse {
   downloadUrl?: string;
   fileKey: string;
   userId: number;
+  folderPath?: string; // Caminho da pasta (ex: "MeuaPasta/subpasta")
+  isFolder?: boolean; // true se é um item de pasta virtual
   metadata?: {
     duration?: number;
     width?: number;
@@ -146,6 +150,36 @@ export async function registerFileMetadata(
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Erro ao registrar metadados");
+  }
+
+  return response.json();
+}
+
+/**
+ * Registrar pasta virtual após upload de pasta completo
+ */
+export async function registerFolderMetadata(
+  folderName: string,
+  totalSize: number,
+  fileCount: number,
+  token: string,
+): Promise<FileResponse> {
+  const response = await fetch(`${API_URL}/files/folder`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      name: folderName,
+      size: totalSize,
+      fileCount,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao registrar pasta");
   }
 
   return response.json();

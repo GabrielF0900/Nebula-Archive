@@ -32,6 +32,10 @@ model File {
   userId  Int
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Pasta e estrutura de diretórios
+  folderPath String? // ex: "MeuaPastaUpload/subpasta" - null se arquivo individual
+  isFolder   Boolean @default(false) // true se é um item de pasta
+
   // Processamento
   thumbnailUrl String?
   downloadUrl  String?

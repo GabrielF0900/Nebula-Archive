@@ -10,6 +10,8 @@ export interface FileResponseDto {
   thumbnailUrl?: string;
   downloadUrl?: string;
   errorMessage?: string;
+  folderPath?: string;
+  isFolder?: boolean;
   metadata?: {
     duration?: number;
     width?: number;

@@ -14,6 +14,8 @@ export class FileService {
     fileSize: number,
     fileType: string,
     fileKey: string,
+    folderPath?: string,
+    isFolder?: boolean,
   ): Promise<File> {
     return this.prisma.file.create({
       data: {
@@ -24,6 +26,30 @@ export class FileService {
         userId,
         status: 'processed',
         processedAt: new Date(),
+        folderPath: folderPath || null,
+        isFolder: isFolder || false,
+      },
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async createFolder(
+    userId: number,
+    folderName: string,
+    totalSize: number,
+    fileCount: number,
+  ): Promise<File> {
+    return this.prisma.file.create({
+      data: {
+        name: folderName,
+        size: totalSize,
+        type: 'application/folder',
+        fileKey: `folder:${folderName}:${Date.now()}`,
+        userId,
+        status: 'processed',
+        processedAt: new Date(),
+        isFolder: true,
+        // Você pode armazenar o count de arquivos como JSON se necessário
       },
     });
   }

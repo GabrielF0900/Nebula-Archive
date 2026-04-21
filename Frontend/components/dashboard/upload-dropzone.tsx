@@ -8,6 +8,7 @@ import {
   generateUploadUrl,
   uploadFileToS3,
   registerFileMetadata,
+  registerFolderMetadata,
 } from "@/lib/api";
 import type { UploadProgress } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -276,8 +277,8 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         prev.map((f) =>
           f.folderName === folderItem.folderName
             ? { ...f, status: "uploading" }
-            : f
-        )
+            : f,
+        ),
       );
 
       let completedFiles = 0;
@@ -300,7 +301,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
           await uploadFileToS3(uploadUrl, file, (progress) => {
             uploadedSize = uploadedSize + progress * file.size;
             const totalProgress = Math.round(
-              (uploadedSize / folderItem.totalSize) * 100
+              (uploadedSize / folderItem.totalSize) * 100,
             );
 
             setFolderUploads((prev) =>
@@ -311,8 +312,8 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
                       progress: totalProgress,
                       uploadedSize: uploadedSize,
                     }
-                  : f
-              )
+                  : f,
+              ),
             );
           });
 
@@ -323,6 +324,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
               size: file.size,
               type: file.type,
               fileKey,
+              folderPath: folderItem.folderName,
             },
             token,
           );
@@ -349,9 +351,23 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
                     ? `${failedFiles} arquivo(s) falharam`
                     : undefined,
               }
-            : f
-        )
+            : f,
+        ),
       );
+
+      // Registrar pasta virtual no banco de dados se upload foi sucesso
+      if (failedFiles === 0) {
+        try {
+          await registerFolderMetadata(
+            folderItem.folderName,
+            folderItem.totalSize,
+            completedFiles,
+            token,
+          );
+        } catch (error) {
+          console.error("Erro ao registrar pasta virtual:", error);
+        }
+      }
 
       // Notificação final
       if (failedFiles === 0) {
@@ -373,12 +389,12 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
       // Limpar após 2 segundos
       setTimeout(() => {
         setFolderUploads((prev) =>
-          prev.filter((f) => f.folderName !== folderItem.folderName)
+          prev.filter((f) => f.folderName !== folderItem.folderName),
         );
         onUploadComplete?.();
       }, 2000);
     },
-    [token, notify, onUploadComplete]
+    [token, notify, onUploadComplete],
   );
 
   const openFolderDialog = useCallback(() => {
@@ -400,7 +416,8 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
       console.log(`Processando ${filesArray.length} arquivo(s) da pasta`);
 
       // Extrair nome da pasta do primeiro arquivo
-      const firstFilePath = filesArray[0].webkitRelativePath || filesArray[0].name;
+      const firstFilePath =
+        filesArray[0].webkitRelativePath || filesArray[0].name;
       const folderName = firstFilePath.split("/")[0];
 
       // Calcular tamanho total
@@ -624,7 +641,9 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
                   <button
                     onClick={() =>
                       setFolderUploads((prev) =>
-                        prev.filter((f) => f.folderName !== folderUpload.folderName)
+                        prev.filter(
+                          (f) => f.folderName !== folderUpload.folderName,
+                        ),
                       )
                     }
                     className="text-muted-foreground hover:text-foreground transition-colors"

@@ -56,6 +56,8 @@ export class FilesController {
       size: number;
       type: string;
       fileKey: string;
+      folderPath?: string;
+      isFolder?: boolean;
     },
     @Req() req: AuthenticatedRequest,
   ): Promise<FileResponseDto> {
@@ -68,6 +70,8 @@ export class FilesController {
       body.size,
       body.type,
       body.fileKey,
+      body.folderPath,
+      body.isFolder,
     );
 
     return {
@@ -85,6 +89,52 @@ export class FilesController {
       fileKey: (file as any).fileKey,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       uploadedAt: (file as any).createdAt,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      folderPath: (file as any).folderPath,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      isFolder: (file as any).isFolder,
+    } as unknown as FileResponseDto;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('folder')
+  async registerFolderMetadata(
+    @Body()
+    body: {
+      name: string;
+      size: number;
+      fileCount: number;
+    },
+    @Req() req: AuthenticatedRequest,
+  ): Promise<FileResponseDto> {
+    const userId = parseInt(req.user.userId);
+
+    // Criar um registro de pasta virtual (isFolder = true, fileKey = folder name)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const folder = await this.fileService.createFolder(
+      userId,
+      body.name,
+      body.size,
+      body.fileCount,
+    );
+
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      id: (folder as any).id,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      name: (folder as any).name,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      size: (folder as any).size,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      type: 'application/folder',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      status: (folder as any).status,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      fileKey: (folder as any).fileKey,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      uploadedAt: (folder as any).createdAt,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      isFolder: (folder as any).isFolder,
     } as unknown as FileResponseDto;
   }
 

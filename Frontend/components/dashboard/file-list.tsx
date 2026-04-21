@@ -29,6 +29,7 @@ import {
   File,
   RefreshCw,
   Zap,
+  Folder as FolderIcon,
 } from "lucide-react";
 import JSZip from "jszip";
 
@@ -54,7 +55,8 @@ function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString("pt-BR");
 }
 
-function getFileIcon(type: string) {
+function getFileIcon(type: string, isFolder?: boolean) {
+  if (isFolder) return FolderIcon;
   if (type.startsWith("video/")) return FileVideo;
   if (type.startsWith("audio/")) return FileAudio;
   if (type.includes("zip") || type.includes("archive")) return FileArchive;
@@ -83,11 +85,16 @@ export function FileList({
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const [isDeletingBatch, setIsDeletingBatch] = useState(false);
 
+  // Filtrar apenas arquivos de nível superior (sem folderPath ou isFolder)
+  const topLevelFiles = files.filter(
+    (file) => !file.folderPath || file.isFolder,
+  );
+
   // Calcular paginação
-  const totalPages = Math.ceil(files.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(topLevelFiles.length / ITEMS_PER_PAGE);
   const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIdx = startIdx + ITEMS_PER_PAGE;
-  const paginatedFiles = files.slice(startIdx, endIdx);
+  const paginatedFiles = topLevelFiles.slice(startIdx, endIdx);
 
   // Alternar seleção de arquivo
   const toggleFileSelection = (fileId: string) => {
@@ -402,7 +409,7 @@ export function FileList({
 
           {/* Arquivos */}
           {paginatedFiles.map((file) => {
-            const Icon = getFileIcon(file.type);
+            const Icon = getFileIcon(file.type, file.isFolder);
             const isSelected = selectedFileIds.has(file.id);
             return (
               <div
