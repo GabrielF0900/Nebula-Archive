@@ -45,6 +45,7 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.6.0",
     "input-otp": "1.4.2",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.564.0",
     "react": "^19",
     "react-day-picker": "9.13.2",
@@ -59,6 +60,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
