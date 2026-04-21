@@ -1,39 +1,32 @@
-# Estágio 1: Dependências e Build
 FROM node:20-slim AS builder
 
-# Instalar o pnpm globalmente e dependências para o Prisma
-RUN npm install -g pnpm && apt-get update && apt-get install -y openssl
+# Instalar o pnpm compatível com o seu lockfile 9.0
+RUN npm install -g pnpm@latest-9 
+RUN apt-get update && apt-get install -y openssl
 
 WORKDIR /app
 
-# Copiar arquivos de definição de pacotes e o schema do Prisma
+# Copiar apenas os arquivos de definição primeiro (Cache Layering)
 COPY package.json pnpm-lock.yaml ./
-COPY prisma ./prisma/
 
-# Instalar dependências (usando o lockfile para garantir consistência)
+# Instalar dependências (Prisma já está no seu lock, então o pnpm vai baixar tudo)
 RUN pnpm install --frozen-lockfile
 
-# Gerar o Prisma Client (Crucial para o backend funcionar)
+# Copiar o schema do Prisma e o código
+COPY prisma ./prisma/
 RUN pnpm prisma generate
 
-# Copiar o restante do código e fazer o build
 COPY . .
 RUN pnpm run build
 
-# Estágio 2: Execução (Runtime)
+# --- Runtime Stage ---
 FROM node:20-slim
-
 WORKDIR /app
+RUN npm install -g pnpm@latest-9 && apt-get update && apt-get install -y openssl
 
-RUN npm install -g pnpm && apt-get update && apt-get install -y openssl
-
-# Copiar apenas o necessário do estágio de build
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
-
-# Executar migrações e subir o servidor
-CMD npx prisma migrate deploy && pnpm run start:prod
