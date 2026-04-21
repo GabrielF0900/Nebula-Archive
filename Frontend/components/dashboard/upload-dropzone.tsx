@@ -274,11 +274,10 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
       <input
         ref={folderInputRef}
         type="file"
-        webkitdirectory={true}
-        multiple
         onChange={handleFolderSelect}
         className="hidden"
         aria-label="Upload folder"
+        {...({ webkitdirectory: true, mozdirectory: true } as any)}
       />
 
       {/* Dropzone */}
@@ -324,7 +323,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
           <Button
             variant="outline"
             size="sm"
-            className="border-border hover:bg-muted"
+            className="border-border hover:bg-primary hover:text-black hover:border-primary transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="h-4 w-4 mr-2" />
@@ -333,7 +332,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
           <Button
             variant="outline"
             size="sm"
-            className="border-border hover:bg-muted"
+            className="border-border hover:bg-primary hover:text-black hover:border-primary transition-colors"
             onClick={() => folderInputRef.current?.click()}
           >
             <Upload className="h-4 w-4 mr-2" />
