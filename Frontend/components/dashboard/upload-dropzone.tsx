@@ -46,7 +46,6 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = useCallback(
     async (file: FileWithPath, folderPath?: string) => {
@@ -231,6 +230,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
+      console.log(`Selecionados ${files.length} arquivo(s) individuais`);
       files.forEach((file: FileWithPath) => {
         handleUpload(file);
       });
@@ -241,20 +241,33 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
     [handleUpload],
   );
 
-  const handleFolderSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || []);
-      files.forEach((file: FileWithPath) => {
-        // webkitRelativePath contém o caminho relativo da pasta
-        const folderPath = file.webkitRelativePath;
+  const openFolderDialog = useCallback(() => {
+    // Criar um input dinamicamente para garantir que funcione
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    (input as any).webkitdirectory = true;
+    (input as any).mozdirectory = true;
+
+    input.onchange = (e: any) => {
+      const fileList = e.target.files;
+      if (!fileList || fileList.length === 0) {
+        console.warn("Nenhum arquivo selecionado da pasta");
+        return;
+      }
+
+      const filesArray = Array.from(fileList) as FileWithPath[];
+      console.log(`Processando ${filesArray.length} arquivo(s) da pasta`);
+
+      filesArray.forEach((file: FileWithPath) => {
+        const folderPath = file.webkitRelativePath || file.name;
+        console.log(`Upload de arquivo com caminho: ${folderPath}`);
         handleUpload(file, folderPath);
       });
-      if (folderInputRef.current) {
-        folderInputRef.current.value = "";
-      }
-    },
-    [handleUpload],
-  );
+    };
+
+    input.click();
+  }, [handleUpload]);
 
   const removeUpload = (fileName: string) => {
     setUploads((prev) => prev.filter((u) => u.file.name !== fileName));
@@ -270,14 +283,6 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
         onChange={handleFileSelect}
         className="hidden"
         aria-label="Upload files"
-      />
-      <input
-        ref={folderInputRef}
-        type="file"
-        onChange={handleFolderSelect}
-        className="hidden"
-        aria-label="Upload folder"
-        {...({ webkitdirectory: true, mozdirectory: true } as any)}
       />
 
       {/* Dropzone */}
@@ -333,7 +338,7 @@ export function UploadDropzone({ onUploadComplete }: UploadDropzoneProps) {
             variant="outline"
             size="sm"
             className="border-border hover:bg-primary hover:text-black hover:border-primary transition-colors"
-            onClick={() => folderInputRef.current?.click()}
+            onClick={openFolderDialog}
           >
             <Upload className="h-4 w-4 mr-2" />
             Selecionar pasta
