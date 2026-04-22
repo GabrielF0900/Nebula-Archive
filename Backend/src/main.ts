@@ -12,6 +12,7 @@ async function bootstrap() {
   // Habilitar CORS
   app.enableCors({
     origin: [
+      'https://dw6708u9xjjhy.cloudfront.net',
       'http://localhost:5173',
       'http://localhost:3000',
       'http://127.0.0.1:5173',
