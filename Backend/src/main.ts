@@ -13,6 +13,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'https://dw6708u9xjjhy.cloudfront.net',
+      'https://ALB-Nebula-Archive-1132292254.us-east-1.elb.amazonaws.com',
       'http://localhost:5173',
       'http://localhost:3000',
       'http://127.0.0.1:5173',
