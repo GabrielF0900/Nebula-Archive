@@ -192,7 +192,7 @@ export async function listFiles(
   token: string,
   filter?: "all" | "processed" | "pending" | "error",
 ): Promise<FileResponse[]> {
-  const url = new URL(`${API_URL}/files`);
+  const url = new URL(`${API_URL}/files`, window.location.origin);
   if (filter && filter !== "all") {
     url.searchParams.append("status", filter);
   }
