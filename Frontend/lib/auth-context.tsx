@@ -24,9 +24,7 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-
-console.log("API URL:", API_URL);
+const API_URL = "/api";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { notify } = useNotification();
