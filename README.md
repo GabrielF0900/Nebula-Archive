@@ -103,15 +103,22 @@ Criando os elementos principais da VPC:
 
 ![VPC Multi-AZ Configuration](public/imagens_da_documentacao_aws/4.jpeg)
 
-**O que está acontecendo aqui:**
+**O que está acontecendo aqui — A Fundação para Resiliência:**
 
-✅ **VPC regional em 2 zonas de disponibilidade** (`us-east-1a` e `us-east-1b`) — isso garante **alta disponibilidade**
-✅ **Se uma AZ inteira falhar**, a outra continua operando e **todo o sistema permanece intacto**
-✅ **2 Subredes públicas** — onde residem as **ALBs** que fazem distribuição de tráfego para as EC2
-✅ **2 Subredes privadas** — onde residem as **EC2s e RDS**, completamente isoladas da internet
-✅ **1 NAT Gateway Zonal** — faz todo o tráfego de saída para patch updates do RDS/EC2
+| Componente | Configuração | Propósito |
+|-----------|--------------|----------|
+| **Zonas de Disponibilidade** | 2x AZs (`us-east-1a`, `us-east-1b`) | Alta disponibilidade — se uma AZ cai, a outra continua |
+| **Subredes Públicas** | 2x subnets `/24` | Onde residem as ALBs para aceitar tráfego da internet |
+| **Subredes Privadas** | 2x subnets `/24` | Onde residem EC2s e RDS — isoladas completamente da internet |
+| **NAT Gateway** | 1x Zonal | Permite tráfego de saída para patch updates (RDS/EC2 podem atingir internet) |
+| **CIDR Planning** | `10.0.0.0/16` | ~65k IPs distribuídos em subnets `/24` (256 IPs cada, 5 reservados AWS) |
 
-A razão por trás da redundância é simples: **em produção, você não pode falhar**. Se um AZ cai, você continua de pé.
+**A filosofia por trás:** Em produção, você não pode falhar. Se uma AZ inteira cai, a outra continua operando e **todo o sistema permanece intacto**. A redundância não é luxo — é obrigação.
+
+✅ **Alta Disponibilidade Garantida**
+✅ **Isolamento de Rede Completo**
+✅ **Escalabilidade para Multi-AZ**
+✅ **Routing Table Automático**
 
 ### Otimizando Custos: Gateway Endpoint S3
 
@@ -143,9 +150,16 @@ Adicionei uma **política personalizada** (gerada com IA, admito) de acordo com 
 
 ![Custom S3 Policy Creation](public/imagens_da_documentacao_aws/9.jpeg)
 
-**Pequeno plot twist:** Inicialmente chamei de `Nebula-Archive-Midia`, mas depois mudei para `Nebula-Archive-Storage` — este é o nome oficial do bucket.
+**Contexto importante:** Inicialmente, no resource da policy coloquei `Nebula-Archive-Midia` (nome que usei durante design inicial).
 
 ![Corrected Policy Configuration](public/imagens_da_documentacao_aws/10.jpeg)
+
+Mas deixa eu esclarecer uma coisa importante: **Não renomeei esse bucket**. Na verdade, **criei 3 buckets diferentes**:
+1. **nebula-archive-media-gabriel** — primeiro bucket (foi para teste, depois substituído)
+2. **nebula-archive-storage** — bucket oficial para armazenamento de arquivos estáticos (este é o real)
+3. **nebula-archive-frontend-prod** — bucket para o frontend (criarei depois)
+
+O conforme desenvolvimento avançava, descobri que o bucket **correto para armazenar os arquivos enviados pelos usuários é o `nebula-archive-storage`** — este é o que eu referencio na política.
 
 Dando nome à política: **NebulaArchiveS3Policy** com descrição adequada.
 
@@ -313,7 +327,8 @@ Senha: Autogerenciada pela AWS com uma senha robusta
 ![DB Name and Credentials](public/imagens_da_documentacao_aws/30.jpeg)
 
 Tipo de instância e armazenamento:
-- Por padrão vinha 20GB, mas **aumentei para 50GB** para ter espaço para crescimento
+- Configuração inicial: 20GB
+- **Aumentei para 50GB** para ter espaço para crescimento durante testes
 
 ![Instance Type and Storage](public/imagens_da_documentacao_aws/31.jpeg)
 
@@ -329,7 +344,7 @@ Escolhendo o **Security Group do RDS** que criamos.
 
 ### RDS Criado com Sucesso
 
-Banco de dados finalizado.
+Banco de dados finalizado e pronto para receber conexões do backend.
 
 ![RDS Creation Success](public/imagens_da_documentacao_aws/42.jpeg)
 
@@ -339,11 +354,21 @@ Banco de dados finalizado.
 
 S3 é onde os arquivos realmente residem. Segurança em repouso é crucial aqui.
 
-### Criando o Primeiro Bucket
+**Esclarecimento importante:** Criei **3 buckets S3** nesse projeto:
+1. **nebula-archive-media-gabriel** — primeira tentativa (teste)
+2. **nebula-archive-storage** — bucket oficial para armazenar arquivos dos usuários ⭐
+3. **nebula-archive-frontend-prod** — bucket para frontend (vem depois)
 
-Comecei a criar os buckets. O primeiro foi nomeado: **nebula-archive-media-gabriel** (depois renomeado para **nebula-archive-storage** como nome oficial).
+### Criando o Bucket de Armazenamento (Storage)
+
+Comecei a criar os buckets. O primeiro foi nomeado: **nebula-archive-media-gabriel** durante a fase de design.
 
 ![First Bucket Creation](public/imagens_da_documentacao_aws/34.jpeg)
+
+**Por que três buckets?** Cada um tem uma responsabilidade:
+- **Media bucket** → descobri durante testes que não era a abordagem certa
+- **Storage bucket** → nome definido para guardar os arquivos das Presigned URLs ✅
+- **Frontend bucket** → separado para distribuição via CloudFront
 
 ### Bloqueio de Acesso Público (CRUCIAL)
 
