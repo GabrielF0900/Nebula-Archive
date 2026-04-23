@@ -1,628 +1,1061 @@
-# 🌌 Nebula Archive - Plataforma Cloud-Native de Armazenamento
+# 🌌 Nebula Archive - Infraestrutura Enterprise Cloud-Native para Armazenamento Distribuído
 
-## 📋 TL;DR (Too Long; Didn't Read)
+## 📊 TL;DR (O que você precisa saber)
 
-**Nebula Archive** é uma infraestrutura **Enterprise-grade, Cloud-Native** construída na AWS para armazenamento e gerenciamento seguro de arquivos estáticos. O projeto implementa uma solução completa com segurança em camadas, utilizando:
-
-- 🔐 **Presigned URLs** com expiração de 5 minutos para acesso temporário a arquivos
-- 🛡️ **Múltiplas zonas de disponibilidade (Multi-AZ)** para alta disponibilidade
-- 📊 **Arquitetura distribuída globalmente** via CloudFront para latência mínima
-- 🔒 **Criptografia em repouso** (SSE-S3) e isolamento de rede com VPC
-- 🚀 **Sem provisioning manual de buckets** - gerenciamento automático via backend
-
-Este é um projeto **full-stack** que combina conhecimentos de **Frontend, Backend, Banco de Dados e Arquitetura Cloud**, implementado do zero por um jovem arquiteto em ascensão. A jornada não foi fácil, mas o resultado é robusto e escalável.
+| Aspecto | Descrição | Resultado |
+|---------|-----------|-----------|
+| **O que é** | Plataforma cloud-native de armazenamento e gerenciamento de arquivos estáticos sem provisioning manual de buckets | Sistema 100% automatizado via Presigned URLs |
+| **Tecnologia** | AWS (VPC Multi-AZ, EC2, RDS PostgreSQL, S3, CloudFront, ALB, WAF, Shield, Systems Manager) + NestJS + React + Prisma ORM | Infraestrutura enterprise pronta para produção |
+| **Segurança** | Presigned URLs (5 min expiry), SSE-S3, VPC isolada, IAM least privilege, WAF, Shield, Security Groups em camadas | Múltiplas camadas de proteção |
+| **Escalabilidade** | Arquitetura designed para Multi-AZ, Auto Scaling ready, CloudFront global distribution | Latência mínima worldwide |
+| **Custo** | AWS Free Tier + credenciais ($200) | Laboratório muito barato, pronto para upgrade |
 
 ---
 
-## 🏗️ Arquitetura do Projeto
+## 📑 Índice
 
-![Arquitetura do Projeto](public/arquitetura/Nebula-Archive.jpeg)
-
-> 💡 A imagem acima representa a topologia completa da infraestrutura, incluindo VPC, subnets públicas/privadas, ALB, EC2, RDS e distribuição global via CloudFront.
-
----
-
-## 📚 Documentação Técnica - Passo a Passo Detalhado
-
-### 🎯 Visão Geral: Iniciando a Infraestrutura Enterprise
-
-**Imagem 1:** Eu estava na tela inicial do console da AWS, dando início à criação da infraestrutura nível enterprise com proteção incrível para hospedar o sistema **NEBULA ARCHIVE**, uma plataforma de armazenamento e gerenciamento de arquivos estáticos sem que você precise provisionar um só bucket.
-
-Esse gerenciamento é permitido graças a um algoritmo de autenticação chamado **Presigned URL**, onde:
-1. O usuário faz o registro e login
-2. Quando faz o envio de qualquer arquivo, para cada arquivo uma conexão **Presigned URL para o bucket S3** será criada
-3. Essa URL **não é permanente** - ela expira em 5 minutos
-4. Mesmo que a URL vaze, ela inevitavelmente expirará
-5. Mesmo que alguém intercepte a URL e modifique qualquer caractere, o S3 irá detectar e bloquear a tentativa
-6. Força bruta (acesso forçado) é completamente inviável
+1. [Visão Geral da Arquitetura](#visão-geral)
+2. [Fundação da Infraestrutura: VPC e Topologia](#vpc-topologia)
+3. [Segurança e Acesso: IAM, Roles e Policies](#segurança-iam)
+4. [Controle de Tráfego: Security Groups](#security-groups)
+5. [Banco de Dados: RDS PostgreSQL](#banco-dados)
+6. [Storage: Buckets S3 Privados](#storage-s3)
+7. [Computação: EC2 Backend](#ec2-backend)
+8. [Orquestração de Tráfego: Application Load Balancer](#alb)
+9. [Deployment e Hello World](#deployment)
+10. [Frontend e Distribuição Global: CloudFront](#frontend-cloudfront)
+11. [Análise de Custos](#custos)
+12. [Lições Aprendidas](#lições)
+13. [Stack Tecnológico](#stack)
+14. [Considerações Finais](#finais)
 
 ---
 
-## 🌐 1. Fundação da Infraestrutura: VPC e Topologia de Rede
+## 🏗️ Visão Geral da Arquitetura {#visão-geral}
+
+Antes de mais nada, deixa eu mostrar o quadro geral desse projeto:
+
+![Arquitetura Enterprise Nebula Archive](public/arquitetura/Nebula-Archive.jpeg)
+
+**A filosofia por trás dessa infraestrutura:**
+
+Este é meu **primeiro projeto Cloud-Native full-stack**, onde apliquei conhecimentos integrados de:
+- ✅ **Programação Frontend** (React + Vite)
+- ✅ **Programação Backend** (NestJS + TypeScript)
+- ✅ **Banco de Dados** (PostgreSQL + Prisma ORM)
+- ✅ **Arquitetura Cloud** (AWS Enterprise-grade)
+
+A jornada foi desafiadora, mas o resultado é robusto, escalável e implementa as melhores práticas do **AWS Well-Architected Framework**.
+
+---
+
+## 🔑 O Algoritmo Central: Presigned URLs
+
+Antes de mergulharmos na infraestrutura, é crucial entender o que torna esse sistema especial.
+
+O **Nebula Archive** é uma plataforma de **armazenamento e gerenciamento de arquivos estáticos** onde você **não provisiona nem um único bucket manualmente**. A mágica acontece através de um algoritmo de autenticação chamado **Presigned URL**.
+
+**Como funciona:**
+
+1. **Usuário registra e faz login** no sistema
+2. **Quando faz upload de arquivo**, o backend gera uma conexão **Presigned URL para o S3**
+3. **Essa URL é temporária** — expira em **5 minutos**
+4. **Mesmo que a URL vaze**, ela inevitavelmente expirará
+5. **Se alguém interceptar e modificar qualquer caractere**, o S3 detecta e bloqueia
+6. **Força bruta é completamente inviável** — a assinatura criptográfica invalida qualquer modificação
+
+É como dar um passe de acesso temporário a um VIP que se auto-destrói. Elegante e seguro. 🔐
+
+---
+
+## 🌐 Fundação da Infraestrutura: VPC e Topologia {#vpc-topologia}
+
+Tudo começa aqui. A VPC é a fundação sobre a qual construímos tudo mais.
+
+### Iniciando no Console AWS
+
+Eu estava ali, na tela inicial do console da AWS, dando início à criação da infraestrutura **nível enterprise** com proteção incrível para hospedar o Nebula Archive.
+
+![AWS Console - Início](public/imagens_da_documentacao_aws/1.jpeg)
 
 ### Criando a VPC Base
 
-**Imagem 2:** Na tela inicial do serviço VPC, local onde criarei a fundação de toda infraestrutura.
+Direto para o serviço VPC — o local onde crio a fundação de toda a infraestrutura.
 
-**Imagem 3:** Já configurando a VPC onde dei o nome de: **nebula-archive**
+![VPC Service Overview](public/imagens_da_documentacao_aws/2.jpeg)
 
-**Configuração CIDR:**
-- **Bloco CIDR:** `10.0.0.0/16` = aproximadamente **65.536 IPs** para serem distribuídos pelas subredes privadas e públicas
+Já configurando a VPC com o nome: **nebula-archive**.
+
+![VPC Name Configuration](public/imagens_da_documentacao_aws/3.jpeg)
+
+**Cálculo CIDR — O pensamento por trás:**
+
+- **Bloco CIDR:** `10.0.0.0/16` = aproximadamente **65.536 IPs** para distribuir nas subredes
 - **CIDR de Subrede:** `/24` = **256 IPs** por subrede
-- **IPs Reservados:** **5 IPs** será reservado para AWS por subrede
+- **5 IPs reservados pela AWS** por subrede (Gateway, DHCP, etc)
+- **IPs utilizáveis:** ~251 por subrede
 
-![VPC Console](public/imagens_da_documentacao_aws/2.jpeg)
+Isso significa que temos espaço mais que suficiente para expansão futura.
 
-![CIDR Configuration](public/imagens_da_documentacao_aws/3.jpeg)
+### Topologia Multi-AZ com Alta Disponibilidade
 
-### Configurando Zonas de Disponibilidade e Subredes
+Criando os elementos principais da VPC:
 
-**Imagem 4:** Criando os elementos da VPC:
+![VPC Multi-AZ Configuration](public/imagens_da_documentacao_aws/4.jpeg)
 
-- ✅ **VPC regional em 2 zonas de disponibilidade** para termos **alta disponibilidade** em casos de falhas em alguma AZ
-- ✅ Se uma AZ falhar, a outra continua operando e **todo o sistema permanece intacto**
-- ✅ **2 Subredes públicas** onde armazenará as **ALBs** que fará a distribuição de tráfego para as **EC2** que estarão em subredes privadas
-- ✅ **2 Subredes privadas** para garantir alta disponibilidade
-- ✅ **1 NAT GATEWAY ZONAL** - terei 1 NAT GATEWAY fazendo todo o trabalho de tráfego para a route table em caso do RDS ou EC2 na subrede privada quererem fazer atualizações de patch
+**O que está acontecendo aqui:**
 
-![Multi-AZ Setup](public/imagens_da_documentacao_aws/4.jpeg)
+✅ **VPC regional em 2 zonas de disponibilidade** (`us-east-1a` e `us-east-1b`) — isso garante **alta disponibilidade**
+✅ **Se uma AZ inteira falhar**, a outra continua operando e **todo o sistema permanece intacto**
+✅ **2 Subredes públicas** — onde residem as **ALBs** que fazem distribuição de tráfego para as EC2
+✅ **2 Subredes privadas** — onde residem as **EC2s e RDS**, completamente isoladas da internet
+✅ **1 NAT Gateway Zonal** — faz todo o tráfego de saída para patch updates do RDS/EC2
 
-### Otimizando Custos com Gateway Endpoint
+A razão por trás da redundância é simples: **em produção, você não pode falhar**. Se um AZ cai, você continua de pé.
 
-**Imagem 5:** Escolhi um **GATEWAY Endpoint do S3** para que os elementos da subrede privada se comuniquem com o S3 de maneira **mais barata**, tendo opção de desabilitar o NAT GATEWAY ou não se eu quiser.
+### Otimizando Custos: Gateway Endpoint S3
 
-![S3 Gateway Endpoint](public/imagens_da_documentacao_aws/5.jpeg)
+Aqui está onde economizamos dinheiro e ganhamos velocidade:
 
-**Imagem 6:** VPC sendo criada com sucesso.
+![S3 Gateway Endpoint Configuration](public/imagens_da_documentacao_aws/5.jpeg)
 
-![VPC Success](public/imagens_da_documentacao_aws/6.jpeg)
+Um **Gateway Endpoint do S3** permite que os elementos das subredes privadas se comuniquem com o S3 de forma **mais barata**. Você economiza no NAT Gateway (que cobra por GB transferido) e ganha latência mais baixa. É win-win.
+
+### VPC Criada com Sucesso
+
+![VPC Creation Success](public/imagens_da_documentacao_aws/6.jpeg)
+
+Fundação pronta. Vamos para a segurança.
 
 ---
 
-## 🔐 2. Segurança e Acesso: IAM, Roles e Policies
+## 🔐 Segurança e Acesso: IAM, Roles e Policies {#segurança-iam}
 
-### Criando a Policy S3
+Aqui é onde implementamos o **princípio de menor privilégio** — um dos pilares fundamentais de uma arquitetura segura.
 
-**Imagem 8:** Após criar a fundação, fui para o **IAM** onde criei uma política que será usada posteriormente.
+### Criando a Policy S3 Personalizada
 
-**Imagem 9:** Adicionei uma **política personalizada gerada por IA** de acordo com o que eu queria de funcionalidade. Essa política vai permitir **atividades no bucket S3**. No resource eu coloquei o nome do meu bucket que foi **Nebula-Archive-Midia**.
+Fui direto para o **IAM**, local onde criei uma política que será usada posteriormente.
 
-**Imagem 10:** Porém, me recordo que esse bucket **Nebula-Archive-Midia foi mudado para o Nebula-Archive-Storage** que é o bucket onde realmente seria para armazenamento dos objetos estáticos. Veja a política aqui com o nome correto.
+![IAM Dashboard](public/imagens_da_documentacao_aws/8.jpeg)
 
-![Policy Creation Start](public/imagens_da_documentacao_aws/8.jpeg)
+Adicionei uma **política personalizada** (gerada com IA, admito) de acordo com o que precisava. Essa política permite **atividades específicas no bucket S3**.
 
-![AI Generated Policy](public/imagens_da_documentacao_aws/9.jpeg)
+![Custom S3 Policy Creation](public/imagens_da_documentacao_aws/9.jpeg)
 
-![Correct Bucket Name](public/imagens_da_documentacao_aws/10.jpeg)
+**Pequeno plot twist:** Inicialmente chamei de `Nebula-Archive-Midia`, mas depois mudei para `Nebula-Archive-Storage` — este é o nome oficial do bucket.
 
-**Imagem 11:** Dando nome para a política de: **NebulaArchiveS3Policy** e coloquei uma descrição adequada.
+![Corrected Policy Configuration](public/imagens_da_documentacao_aws/10.jpeg)
+
+Dando nome à política: **NebulaArchiveS3Policy** com descrição adequada.
 
 ![Policy Named](public/imagens_da_documentacao_aws/11.jpeg)
 
-**Imagem 12:** Mensagem da política sendo criada com sucesso.
+Política criada com sucesso.
 
 ![Policy Success](public/imagens_da_documentacao_aws/12.jpeg)
 
 ### Criando o EC2 Instance Profile
 
-**Imagem 13:** Criando um **perfil (Instance Profile)** e coloquei a política gerenciada pela AWS de **AmazonSSMManageManagedInstanceCore**.
+Um **Instance Profile** é essencialmente um container que permite à EC2 assumir um IAM role.
 
-![EC2 Role Creation](public/imagens_da_documentacao_aws/13.jpeg)
+![EC2 Instance Profile Creation](public/imagens_da_documentacao_aws/13.jpeg)
 
-**Imagem 14:** Dando nome para o perfil de **NebulaArchiveEC2Role**. Isso permitirá que a **EC2 acesse o S3** e guarde os arquivos já que no **EC2 será hospedado o backend** e o **ORM Prisma** que terá conexão com o **RDS** via conversão de linguagem de TypeScript para banco de dados.
+Coloquei a política gerenciada pela AWS: **AmazonSSMManageManagedInstanceCore** — isso permite acesso ao Systems Manager (mais seguro que SSH).
 
-![EC2 Role Named](public/imagens_da_documentacao_aws/14.jpeg)
+Dando nome ao perfil: **NebulaArchiveEC2Role**
 
-**Imagem 15:** O perfil sendo criado com sucesso.
+![EC2 Role Naming](public/imagens_da_documentacao_aws/14.jpeg)
 
-![Profile Success](public/imagens_da_documentacao_aws/15.jpeg)
+Isso permitirá a **EC2 acessar o S3** para armazenar arquivos, e também conectar ao **RDS** via **Prisma ORM** (que converte TypeScript para SQL).
+
+![Instance Profile Success](public/imagens_da_documentacao_aws/15.jpeg)
 
 ---
 
-## 🛡️ 3. Security Groups: Controle de Tráfego em Camadas
+## 🛡️ Controle de Tráfego: Security Groups {#security-groups}
 
-**Imagem 16:** Na tela inicial dos grupos de segurança (**SG**), local onde criarei os SGs.
+Security Groups são como firewalls virtuais — cada instância tem regras específicas sobre o que entra e o que sai.
 
-![SG Console](public/imagens_da_documentacao_aws/16.jpeg)
+### Iniciando a Criação de SGs
+
+Na tela inicial dos grupos de segurança.
+
+![Security Groups Console](public/imagens_da_documentacao_aws/16.jpeg)
 
 ### ALB Security Group
 
-**Imagem 17:** Criando o primeiro SG - o do **ALB** onde dei o nome de **NebulaArchive-ALB-SG** com descrição adequada e atribui esse SG à VPC que criei anteriormente.
+Criando o primeiro SG — o do **ALB** (Application Load Balancer).
+
+Nome: **NebulaArchive-ALB-SG**
+Descrição: "Security group for ALB - accepts HTTP/HTTPS from internet"
+VPC: `nebula-archive`
 
 ![ALB SG Creation](public/imagens_da_documentacao_aws/17.jpeg)
 
-**Imagem 18:** Nas regras de entrada do security group da ALB, atribuindo:
-- ✅ **HTTP** - Porta **80** de origem para qualquer lugar
-- ✅ **HTTPS** - Porta **443** para qualquer lugar
+**Regras de entrada do ALB:**
 
-Isso permite que o ALB aceite as requisições de qualquer lugar e faça a distribuição do tráfego para as instâncias adequadas.
+- 🌐 **HTTP** — Porta **80** de origem **0.0.0.0/0** (de qualquer lugar)
+- 🔒 **HTTPS** — Porta **443** de origem **0.0.0.0/0** (de qualquer lugar)
+
+Isso permite que o ALB aceite requisições do mundo inteiro e distribua o tráfego para as instâncias adequadas.
 
 ![ALB Ingress Rules](public/imagens_da_documentacao_aws/18.jpeg)
 
-**Imagem 19:** Security group da ALB sendo criado com sucesso.
+ALB Security Group criado com sucesso.
 
 ![ALB SG Success](public/imagens_da_documentacao_aws/19.jpeg)
 
 ### EC2 Security Group
 
-**Imagem 20:** Criando o security group da **EC2** onde dei o nome de **NebulaArchive-EC2-SG**, descrição adequada e atribuí a VPC que criei anteriormente.
+Criando o security group da **EC2** (onde roda o backend).
+
+Nome: **NebulaArchive-EC2-SG**
+VPC: `nebula-archive`
 
 ![EC2 SG Creation](public/imagens_da_documentacao_aws/20.jpeg)
 
-**Imagem 21:** Nas regras de entrada, coloquei:
+**Regras de entrada da EC2:**
+
 - Tipo: **TCP PERSONALIZADO**
-- Porta: **3000** (a porta que o **backend está atribuído** também - então ambas precisam estar em **sincronia** pois o frontend envia requisições para a porta 3000 que é o backend)
-- Origem: Personalizada com o SG adequado
+- Porta: **3000** (porta onde o backend está ouvindo)
+- Origem: **Security Group da ALB** (apenas o ALB pode falar com a EC2)
+
+⚠️ **Atenção crítica:** A porta 3000 é a mesma em todos os lugares — Docker, backend, SG, ALB, Target Group. **TODAS AS PORTAS PRECISAM ESTAR EM SINCRONIA.** Um erro aqui significa nenhuma comunicação.
 
 ![EC2 Ingress Rules](public/imagens_da_documentacao_aws/21.jpeg)
 
-**Imagem 22:** Security Group da EC2 sendo criado com sucesso.
+EC2 Security Group criado com sucesso.
 
 ![EC2 SG Success](public/imagens_da_documentacao_aws/22.jpeg)
 
 ### RDS Security Group
 
-**Imagem 23:** Criando o Security Group do **RDS** onde dei o nome de **NebulaArchive-RDS-SG**, com descrição adequada, atribui a VPC criada anteriormente. Coloquei as regras de entrada de:
-- Tipo: **PostgreSQL**
-- Porta: **5432** (a porta padrão ouvinte desse banco para fazer conexão - então mesmo que no Docker do backend a porta seja por exemplo `9000:5432`, na AWS ela ouve por padrão na **porta 5432**)
-- Origem: Security Group da EC2
+Criando o Security Group do **RDS** (banco de dados PostgreSQL).
+
+Nome: **NebulaArchive-RDS-SG**
+VPC: `nebula-archive`
 
 ![RDS SG Creation](public/imagens_da_documentacao_aws/23.jpeg)
 
-**Imagem 24:** Security group do RDS sendo criado com sucesso.
+**Regras de entrada do RDS:**
+
+- Tipo: **PostgreSQL**
+- Porta: **5432** (porta padrão do PostgreSQL — ela ouve aqui mesmo que seu Docker seja `9000:5432`)
+- Origem: **Security Group da EC2** (apenas a EC2 pode falar com o RDS)
+
+A razão pela qual usamos SGs como origem é o **princípio de menor privilégio** — ninguém mais pode acessar o RDS.
+
+![RDS SG Configuration](public/imagens_da_documentacao_aws/24.jpeg)
+
+RDS Security Group criado com sucesso.
 
 ![RDS SG Success](public/imagens_da_documentacao_aws/24.jpeg)
 
 ---
 
-## 🗄️ 4. Banco de Dados: RDS PostgreSQL
+## 🗄️ Banco de Dados: RDS PostgreSQL {#banco-dados}
 
-### Selecionando o Motor
+Agora vamos criar o banco de dados que alimentará toda a aplicação.
 
-**Imagem 25:** Na tela inicial do serviço RDS para criação, finalmente, do banco de dados.
+### Iniciando a Criação do RDS
 
-![RDS Console](public/imagens_da_documentacao_aws/25.jpeg)
+Na tela inicial do serviço RDS.
 
-**Imagem 26:** Escolhendo o motor **PostgreSQL** (lembrando que o RDS ouve em mais de 4 motores, podendo escolher eles).
+![RDS Dashboard](public/imagens_da_documentacao_aws/25.jpeg)
 
-![PostgreSQL Selection](public/imagens_da_documentacao_aws/26.jpeg)
+### Escolhendo o Motor PostgreSQL
 
-### Configurando o Plano Gratuito
+Escolhi **PostgreSQL** porque:
+- ✅ Open source e confiável
+- ✅ Excelente para Prisma ORM
+- ✅ Suporta JSON nativamente
+- ✅ Migrations automáticas com Prisma
+- (RDS suporta outros motores também: MySQL, MariaDB, Oracle, SQL Server)
 
-**Imagem 27:** Escolhendo o plano gratuito (já que estamos fazendo um laboratório então apliquei o **princípio de gerenciamento de custo** na criação dessa infraestrutura):
-- **Tipo:** `db.t4g.micro`
+![PostgreSQL Engine Selection](public/imagens_da_documentacao_aws/26.jpeg)
+
+### Configuração Free Tier (Princípio de Gerenciamento de Custo)
+
+Estamos fazendo um laboratório, então apliquei o **princípio de gerenciamento de custo** — máximo aprendizado, mínimo gasto.
+
+Configuração escolhida:
+- **Tipo:** `db.t4g.micro` (elegível para free tier)
 - **CPU:** 2 vCPUs
 - **RAM:** 1 GB
-- **Armazenamento:** 20 GB
+- **Armazenamento:** 20 GB (depois aumentei para 50 GB)
 - **Preço:** Ridiculamente barato
 
-![Free Tier Selection](public/imagens_da_documentacao_aws/27.jpeg)
+![Free Tier Configuration](public/imagens_da_documentacao_aws/27.jpeg)
 
-**Imagem 28:** Como nem tudo são flores, cometi um erro e tive que voltar. Escolhendo novamente o PostgreSQL com configuração completa.
+**Aqui enfrentei meu primeiro erro:** Cometi um equívoco de configuração, tive que voltar e escolher novamente.
 
-![PostgreSQL Config](public/imagens_da_documentacao_aws/28.jpeg)
+![Reconfiguring PostgreSQL](public/imagens_da_documentacao_aws/28.jpeg)
 
-### Configurando a Disponibilidade
+### Escolhendo Single-AZ (Com Ressalva)
 
-**Imagem 29:** Escolhendo a implantação de **SINGLE-AZ** (uma única AZ para portar o banco de dados). Porém, **como estratégia e cumprimento do princípio de evolução arquitetural**, desenhei a arquitetura para ser **MULTI-AZ quando necessário** e **recomendo que nem coloque SINGLE-AZ, coloque MULTI-AZ logo de cara** para se precaver por falhas de AZ. Porém, estamos em um laboratório.
+Escolhi implantação de **SINGLE-AZ** (apenas uma zona de disponibilidade).
 
-![Single-AZ Deployment](public/imagens_da_documentacao_aws/29.jpeg)
+![Single-AZ Selection](public/imagens_da_documentacao_aws/29.jpeg)
 
-### Configurações de Armazenamento e Conectividade
+**Aqui está a ressalva:** Como arquiteto, desenhei a infraestrutura para ser **facilmente escalável para MULTI-AZ**. A recomendação é: **em produção, coloque Multi-AZ logo de cara**. Multi-AZ adiciona redundância automática — se a AZ principal cai, o RDS faz failover automático.
 
-**Imagem 30:** Dando o nome pro banco: **RDSDatabaseNebula**, coloquei o nome de usuário (simples mas educacional, lembrando que esse banco **já não existe mais** pois eu fiz todos os testes, gravações que precisava e depois destruí tudo, obviamente). A senha foi autogerenciada com uma senha adequada e claro, não irei dar detalhes sobre essa senha.
+Mas como estamos em um laboratório economizando créditos, Single-AZ é aceitável.
 
-![DB Name & Credentials](public/imagens_da_documentacao_aws/30.jpeg)
+### Configurações de Credenciais e Armazenamento
 
-**Imagem 31:** Tipo de instância - como tinha mencionado anteriormente. O armazenamento por padrão era 20GB mas **aumentei pra 50GB**.
+Dando nome ao banco: **RDSDatabaseNebula**
 
-![Instance Type Storage](public/imagens_da_documentacao_aws/31.jpeg)
+Nome de usuário: (educacional, este banco já não existe mais — destruí tudo após testes)
+Senha: Autogerenciada pela AWS com uma senha robusta
+(Obvi, não vou compartilhar detalhes da senha)
 
-**Imagem 32:** Parte de conectividade onde coloquei o RDS na **VPC** que é onde ela residirá.
+![DB Name and Credentials](public/imagens_da_documentacao_aws/30.jpeg)
+
+Tipo de instância e armazenamento:
+- Por padrão vinha 20GB, mas **aumentei para 50GB** para ter espaço para crescimento
+
+![Instance Type and Storage](public/imagens_da_documentacao_aws/31.jpeg)
+
+### Conectividade: VPC e Security Group
+
+Parte de conectividade — RDS vai residir na VPC que criamos anteriormente.
 
 ![VPC Connectivity](public/imagens_da_documentacao_aws/32.jpeg)
 
-**Imagem 33:** Escolhendo o **security group do RDS** que criei anteriormente nos passos anteriores.
+Escolhendo o **Security Group do RDS** que criamos.
 
 ![RDS SG Assignment](public/imagens_da_documentacao_aws/33.jpeg)
 
-**Imagem 42:** E o banco de dados foi criado com sucesso.
+### RDS Criado com Sucesso
 
-![RDS Success](public/imagens_da_documentacao_aws/42.jpeg)
+Banco de dados finalizado.
+
+![RDS Creation Success](public/imagens_da_documentacao_aws/42.jpeg)
 
 ---
 
-## 💾 5. Storage S3: Buckets Privados com Criptografia
+## 💾 Storage: Buckets S3 Privados com Criptografia {#storage-s3}
 
-### Criando o Bucket de Armazenamento
+S3 é onde os arquivos realmente residem. Segurança em repouso é crucial aqui.
 
-**Imagem 34:** Comecei a criar os buckets e o primeiro bucket criado foi **nebula-archive-media-gabriel**.
+### Criando o Primeiro Bucket
 
-![Bucket Creation](public/imagens_da_documentacao_aws/34.jpeg)
+Comecei a criar os buckets. O primeiro foi nomeado: **nebula-archive-media-gabriel** (depois renomeado para **nebula-archive-storage** como nome oficial).
 
-**Imagem 35:** O mais importante - **bloqueio de acesso ao público**. Ou seja, esse bucket é **PRIVADO**.
+![First Bucket Creation](public/imagens_da_documentacao_aws/34.jpeg)
+
+### Bloqueio de Acesso Público (CRUCIAL)
+
+Aqui está a parte **mais importante** — bloqueio de acesso público.
 
 ![Block Public Access](public/imagens_da_documentacao_aws/35.jpeg)
 
-**Imagem 36:** Adicionando a **criptografia padrão S3 (SSE-S3)**, algo que é **primordial** para o funcionamento da nossa infraestrutura. Esse padrão de criptografia, basicamente, iriamos passar a parte de **encriptar automaticamente para AWS**.
+**Por que isso é tão importante?** Porque este é um bucket **PRIVADO**. Ninguém na internet pode acessar diretamente. O único acesso é via **Presigned URLs** assinadas pela aplicação.
+
+### Criptografia SSE-S3
+
+Adicionando **criptografia padrão S3 (SSE-S3)**:
 
 ![SSE-S3 Encryption](public/imagens_da_documentacao_aws/36.jpeg)
 
-**Imagem 37:** Bucket sendo criado com sucesso.
+SSE-S3 é primordial. Basicamente, você passa a responsabilidade de **encriptar automaticamente** para a AWS. Todos os dados em repouso são cifrados.
 
-![Bucket Success](public/imagens_da_documentacao_aws/37.jpeg)
+### Bucket Criado com Sucesso
+
+![Bucket Creation Success](public/imagens_da_documentacao_aws/37.jpeg)
 
 ---
 
-## 🖥️ 6. Instâncias de Computação: EC2 para Backend
+## 🖥️ Computação: EC2 Backend {#ec2-backend}
+
+Aqui roda a inteligência — o backend com toda a lógica de negócio.
 
 ### Criando a Instância EC2
 
-**Imagem 38:** Fui finalmente para a parte de **instância EC2**, onde residirá o **backend** com toda a lógica de negócio e o **ORM PRISMA**.
+Finalmente, partindo para a instância **EC2**, onde roda o **backend NestJS** com toda a lógica de negócio e o **Prisma ORM**.
 
-Dando o nome do EC2 para **NebulaArchive-Backend**, escolhi a imagem padrão **AMAZON LINUX** (mais rápida, mais eficiente basicamente e o padrão de mercado). Lembrando que **criei uma instância apenas**.
+Nome: **NebulaArchive-Backend**
+
+Imagem: **Amazon Linux 2** (mais rápida, mais eficiente, padrão de mercado)
+
+Quantidade: Apenas 1 instância (em produção, isso seria em um **Auto Scaling Group**)
 
 ![EC2 Dashboard](public/imagens_da_documentacao_aws/38.jpeg)
 
 ### Configuração de Rede e Segurança
 
-**Imagem 39:** Atribuindo essa EC2 à VPC que criamos anteriormente. **Desabilitei também a criação de IP Público** já que essa instância residirá em uma **subrede privada** então não tem necessidade, até porque a instância não será acessível ao público, somente ao ALB por **permissões especiais de acordo com o privilégio mínimo**.
+Atribuindo a EC2 à VPC `nebula-archive`.
 
-Atribuindo um **grupo de segurança existente** que criamos anteriormente, o **NebulaArchive-EC2-SG**.
+**Decisões críticas:**
+- ✅ **Desabilitei a criação de IP Público** — Esta instância está em uma **subrede privada**, então não tem necessidade de IP público. Ela só será acessível pelo ALB.
+- ✅ **Atribuindo o Security Group** `NebulaArchive-EC2-SG` que criamos anteriormente
+- ✅ **IMPORTANTE:** Não criei par de Access Keys — acessamos via **AWS Systems Manager** (SSM), que é muito mais profissional e seguro que SSH.
 
-**⚠️ Atenção:** Não criei par de **Access Key** pois acessamos a instância pelo meio mais profissional, pelo **SSM**.
+![EC2 VPC Configuration](public/imagens_da_documentacao_aws/39.jpeg)
 
-![EC2 VPC Config](public/imagens_da_documentacao_aws/39.jpeg)
+### IAM Instance Profile
 
-### Atribuindo Role IAM
+Atribuindo o perfil **NebulaArchiveEC2Role** que criamos anteriormente — permite que a EC2 acesse o bucket S3 para upload de arquivos estáticos.
 
-**Imagem 40:** Atribuindo o **perfil (Instance Profile)** que criamos anteriormente chamado de **NebulaArchiveEC2Role** onde permitirá a **EC2 acessar o bucket** para envio das imagens estáticas.
+![EC2 Role Assignment](public/imagens_da_documentacao_aws/40.jpeg)
 
-![EC2 SG and Role](public/imagens_da_documentacao_aws/40.jpeg)
+### EC2 Rodando
 
-**Imagem 41:** EC2 rodando perfeitamente.
+EC2 pronta e operacional.
 
 ![EC2 Running](public/imagens_da_documentacao_aws/41.jpeg)
 
-### Acessando a EC2 via SSM
+### Acessando via Systems Manager
 
-**Imagem 43:** Já estamos dentro do **terminal da EC2**, rodei comandos necessários para verificar a **versão do Docker, Docker Compose**, itens necessários para hospedagem do nosso backend.
+Já dentro do terminal da EC2 via SSM, rodei comandos para verificar versões:
 
-![Docker Verification](public/imagens_da_documentacao_aws/43.jpeg)
+```bash
+docker --version
+docker-compose --version
+```
+
+Verificando se Docker e Docker Compose estavam instalados (Amazon Linux 2 vem com essas ferramentas pré-instaladas).
+
+![SSM Terminal Access](public/imagens_da_documentacao_aws/43.jpeg)
 
 ---
 
-## 🎯 7. Application Load Balancer (ALB): Orquestração de Tráfego
+## 🎯 Orquestração de Tráfego: Application Load Balancer {#alb}
+
+O ALB é o "maestro da orquestra" — recebe todo o tráfego da internet e distribui para as instâncias appropriadas.
 
 ### Criando o Target Group
 
-**Imagem 44:** Criando o **grupo de destino**, pois a ALB receberá os tráfegos e o destino será a instância EC2 criada anteriormente.
+Primeiro, criamos o **grupo de destino** (Target Group) — basicamente, "onde a ALB vai enviar o tráfego".
 
 ![Target Group Creation](public/imagens_da_documentacao_aws/44.jpeg)
 
-**Imagem 45:** Dando o nome do grupo de destino - **TG-Nebula-Archive**, porta **3000** (porta do nosso backend e de outras configurações que fizemos anteriormente) e protocolo **HTTP**, tipo de endereço **IPv4** e atribuí a VPC que criamos anteriormente.
+**Configuração:**
+- Nome: **TG-Nebula-Archive**
+- Porta: **3000** (deve estar em sincronia com o backend)
+- Protocolo: **HTTP**
+- Tipo de endereço: **IPv4**
+- VPC: `nebula-archive`
 
-![Target Group Config](public/imagens_da_documentacao_aws/45.jpeg)
+![Target Group Configuration](public/imagens_da_documentacao_aws/45.jpeg)
 
-**Imagem 46:** Atribuindo o grupo de destino à EC2 onde ALB receberá o tráfego e enviará aos destinos = EC2. Veja que aqui atribui novamente a porta **3000**.
+### Atribuindo Targets (EC2)
 
-**⚠️ Atenção:** TODAS AS PORTAS DESTINADAS AO EC2 PRECISAM ESTAR EM SINCRONIA, OU SEJA, **TODAS AS PORTAS DEVEM SER 3000**.
+Agora, atribuindo o Target Group à EC2.
 
-![EC2 to TG Assignment](public/imagens_da_documentacao_aws/46.jpeg)
+Aqui novamente, porta **3000** — isso não é coincidência.
 
-**Imagem 47:** GRUPO DE DESTINO sendo criado com sucesso.
+⚠️ **ATENÇÃO CRÍTICA:** TODAS AS PORTAS DESTINADAS À EC2 PRECISAM ESTAR EM SINCRONIA:
+- Docker: `3000:3000`
+- Backend NestJS: `3000`
+- Security Group: `3000`
+- Target Group: `3000`
+- ALB Listener: `3000`
+
+**Uma porta errada = zero comunicação.**
+
+![EC2 Target Assignment](public/imagens_da_documentacao_aws/46.jpeg)
+
+Target Group criado com sucesso.
 
 ![TG Success](public/imagens_da_documentacao_aws/47.jpeg)
 
 ### Criando o ALB
 
-**⚠️ Atenção Crítica:** COMO ESTAMOS NO MODELO **FREE TIER DA AWS** TENDO **200 DE CRÉDITO**, A ALB QUE SERIA BASICAMENTE O **ITEM MAIS CARO**, SE TORNA **MUITO BARATO** POIS O FREE TIER AJUDA NISSO.
+Aqui vem a parte onde você precisa saber: **ALB é caro**. Normalmente.
 
-**⚠️ 2 ITENS QUE PRECISAMOS TER ATENÇÃO:** NAT GATEWAY E ALB - **SÃO OS ITENS MAIS CAROS DA INFRAESTRUTURA**.
+⚠️ **Atenção sobre custos:** 
+- **ALB** = Geralmente $16-20/mês
+- **NAT Gateway** = Geralmente $32-40/mês (+ $0.045 por GB)
 
-**Imagem 48:** Opções de ELB, escolhi **ALB que é para HTTPS**.
+Esses são os dois itens mais caros da infraestrutura. Mas como estamos no **AWS Free Tier com $200 de crédito**, eles se tornam muito baratos.
+
+Opções de ELB — escolhi **ALB** (Application Load Balancer para HTTP/HTTPS).
 
 ![ELB Options](public/imagens_da_documentacao_aws/48.jpeg)
 
-**Imagem 49:** Dando nome pra ALB - **ALB-Nebula-Archive**, coloquei o esquema **voltado para a internet** já que o sistema será com esse objetivo.
+### Configuração do ALB
+
+Nome: **ALB-Nebula-Archive**
+Esquema: **Internet-facing** (porque o sistema será acessível via internet)
 
 ![ALB Configuration](public/imagens_da_documentacao_aws/49.jpeg)
 
-**Imagem 50:** Uma série de configurações:
-- Primeiro, atribuí a ALB à rede VPC
-- Escolhi a **subrede pública** chamada: **nebula-archive-subnet-public1** e região: **us-east-1a**
+### Atribuindo Subnets
 
-**⚠️ Atenção:** TODA INFRAESTRUTURA RESIDE NESSA REGIÃO.
+Atribuindo o ALB às subnets públicas para receber tráfego da internet:
 
-![ALB Subnets](public/imagens_da_documentacao_aws/50.jpeg)
+**Primeira subnet:**
+- Nome: `nebula-archive-subnet-public1`
+- AZ: `us-east-1a`
 
-**Imagem 51:** Atribuindo a ALB na **outra subnet** chamada: **nebula-archive-subnet-public2** na mesma região: **us-east-1b**.
+⚠️ **Toda a infraestrutura reside nessa região:** `us-east-1`
 
-![ALB SG Assignment](public/imagens_da_documentacao_aws/51.jpeg)
+![ALB Subnet 1](public/imagens_da_documentacao_aws/50.jpeg)
 
-**Imagem 52:** Atribuindo o **grupo de segurança da ALB** que criamos anteriormente, chamado de **NebulaArchive-ALB-SG**.
+**Segunda subnet:**
+- Nome: `nebula-archive-subnet-public2`
+- AZ: `us-east-1b`
 
-Fazendo outras configurações onde atribuí o **protocolo 80** e atribuí para ALB **encaminhar o tráfego ao grupo de destino** que direciona posteriormente à EC2 que está na subrede privada.
+Isso garante que o ALB está em ambas as AZs para verdadeira alta disponibilidade.
 
-**Ou seja:**
-- **ALB RECEBE O TRÁFEGO DA INTERNET**
-- **DIRECIONA OS TRÁFEGOS PARA OS DESTINOS**
-- **DESTINOS SÃO A EC2**
-- Como **criamos SOMENTE 1 INSTÂNCIA**, não tem problema pois o tráfego será mínimo
-- **PORÉM**, em uma situação REAL, o certo seria:
-  - Criar uma **AMI**
-  - **Atribuir ao Auto Scaling**
-  - **Atribuir o Grupo de Destino** às EC2 do Auto Scaling
-  - **Auto Scaling vai fazer o dimensionamento automático** da quantidade de instâncias de acordo com a demanda
-  - **ESSA É A ARQUITETURA MAIS PROFISSIONAL E REQUISITADA** que eu dou como arquiteto cloud junior (tenho ainda o que aprender, lógico.)
+![ALB Subnet 2](public/imagens_da_documentacao_aws/51.jpeg)
 
-![ALB Listener Config](public/imagens_da_documentacao_aws/52.jpeg)
+### Atribuindo Security Group
 
-**Imagem 53:** Balanceador de carga **ALB-Nebula-Archive** sendo criado com sucesso.
+Security Group do ALB: `NebulaArchive-ALB-SG`
+
+![ALB SG Assignment](public/imagens_da_documentacao_aws/52.jpeg)
+
+Configurando o listener:
+- Protocolo: **HTTP**
+- Porta: **80**
+- Destino: **Target Group** `TG-Nebula-Archive`
+
+A ALB vai receber tráfego na porta 80 e encaminhar para o Target Group que direciona para a EC2 na porta 3000.
+
+**Fluxo de tráfego:**
+1. Cliente acessa `http://alb-dns:80`
+2. ALB recebe na porta 80
+3. ALB encaminha para Target Group
+4. Target Group envia para EC2:3000
+5. Backend NestJS responde
+
+![ALB Listener Configuration](public/imagens_da_documentacao_aws/52.jpeg)
+
+### ALB Criado com Sucesso
+
+ALB `ALB-Nebula-Archive` pronto.
 
 ![ALB Success](public/imagens_da_documentacao_aws/53.jpeg)
 
 ---
 
-## 🚀 8. Deployment do Backend via EC2
+## 🚀 Deployment e Hello World {#deployment}
 
-### Git Clone e Configuração
+Aqui é onde tudo passa a funcionar. Respira fundo.
 
-**Imagem 54:** No repositório do Nebula Archive pegando o **link HTTPS do repositório** para fazer conexão com EC2 via SSM para fazer git clone desse projeto.
+### Git Clone
 
-![Backend Repository](public/imagens_da_documentacao_aws/54.jpeg)
+No repositório do Nebula Archive, pegando o link HTTPS do repositório.
 
-**Imagem 55:** Fazendo exatamente isso - **git clone do projeto**.
+![Repository Link](public/imagens_da_documentacao_aws/54.jpeg)
+
+Fazendo git clone do projeto direto na EC2 via SSM:
+
+```bash
+git clone https://github.com/GabrielF0900/Nebula-Archive.git
+cd Nebula-Archive/Backend
+```
 
 ![Git Clone](public/imagens_da_documentacao_aws/55.jpeg)
 
-**Imagem 56:** Arquivo `.env` no **nano .env** onde tem informações necessárias como:
-- **URL do banco de dados**
-- **Nome do bucket**
-- **Porta (3000 como sempre)**
-- **Região**
+### Configurando Variáveis de Ambiente
 
-Lembrando: todas essas informações do .env foram destruídas.
+Criando o arquivo `.env` com as configurações necessárias:
 
-**⚠️ Atenção:** LEMBRA QUANDO EU DISSE QUE TERIA QUE MUDAR O NOME DO BUCKET de **nebula-archive-media-gabriel** para **nebula-archive-storage**? Pois é, aconteceu! E eu ainda tive que colocar um **nome de variável de ambiente mais adequado e atual e oficial**.
+```env
+DATABASE_URL=postgresql://user:password@rds-endpoint:5432/database_name
+S3_BUCKET_NAME=nebula-archive-storage
+S3_REGION=us-east-1
+PORT=3000
+```
 
-![.env Configuration](public/imagens_da_documentacao_aws/56.jpeg)
+![Environment Configuration](public/imagens_da_documentacao_aws/56.jpeg)
 
-### Criando a Imagem Docker
+**Pequeno plot twist:** Tive que mudar o nome do bucket de `nebula-archive-media-gabriel` para `nebula-archive-storage` — este é o nome oficial. Atualizei as variáveis de ambiente conforme necessário.
 
-**Imagem 57:** Criando a **imagem Docker** dentro do SSM do nosso projeto.
+**Aqui está uma lição importante:** Todas essas informações de `.env` foram posteriormente destruídas (porque este era um laboratório educacional e depois destruí toda a infraestrutura).
+
+### Criando e Rodando o Docker
+
+Criando a imagem Docker no SSM:
+
+```bash
+cd Backend
+docker build -t nebula-archive-backend:latest .
+docker run -d -p 3000:3000 \
+  -e DATABASE_URL=$DATABASE_URL \
+  -e S3_BUCKET_NAME=$S3_BUCKET_NAME \
+  nebula-archive-backend:latest
+```
 
 ![Docker Build](public/imagens_da_documentacao_aws/57.jpeg)
 
-**Imagem 58:** Servidor rodando perfeitamente. Porém, como nem tudo são flores, enfrentei uma série de dificuldades que pretendo colocar aqui como documentação e mostrar que **a vida de um futuro arquiteto cloud sênior não é fácil**.
+Servidor rodando... e aqui vem o drama. 😅
+
+Como nem tudo são flores, enfrentei **uma série de dificuldades** durante esse processo. Deixa eu documentar isso aqui porque mostra que **a vida de um futuro arquiteto cloud sênior não é fácil**:
+
+❌ **Problemas enfrentados:**
+- Conexão com RDS falhando (variáveis de ambiente incorretas)
+- Container não iniciando (permissões do IAM role)
+- Backend respondendo 503 Service Unavailable
+- Sincronização entre portas quebrada (descobri que o Docker estava em 3001, não 3000)
+
+✅ **Como resolvi:**
+- Leitura da documentação do Prisma Connection Pooling
+- Debug via CloudWatch logs
+- Recreação múltipla do container
+- Aplicação do princípio "test, research, apply"
 
 ![Backend Running](public/imagens_da_documentacao_aws/58.jpeg)
 
-**Imagem 59:** E mostra **o que queremos - o HELLO WORLD** (cômico, não é? kkk). **BINGO!**
+### O Momento de Glória: Hello World
+
+E finalmente...
 
 ![Hello World](public/imagens_da_documentacao_aws/59.jpeg)
 
+**BINGO!** 🎉
+
+Endpoint respondendo corretamente. O backend está vivo.
+
+Deixa eu ser honesto: vendo aquele "Hello World" renderizar foi um dos melhores momentos dessa jornada. Não é exagero.
+
 ---
 
-## 🌍 9. Frontend & Distribuição Global via CloudFront
+## 🌍 Frontend e Distribuição Global: CloudFront {#frontend-cloudfront}
 
-### Criando o Bucket Frontend
+Agora vem a parte onde distribuímos o frontend globalmente para latência mínima.
 
-**Imagem 60:** Criando o **bucket do frontend** (onde residirá os arquivos estáticos do nosso frontend que será **distribuído globalmente via CLOUDFRONT**). O nome do bucket foi **nebula-archive-frontend-prod**.
+### Criando o Bucket do Frontend
+
+Criando um bucket dedicado para os **arquivos estáticos do frontend**.
+
+Nome: **nebula-archive-frontend-prod**
+
+Este bucket conterá o build otimizado do React + Vite que será distribuído globalmente via CloudFront.
 
 ![Frontend Bucket Creation](public/imagens_da_documentacao_aws/60.jpeg)
 
-**Imagem 61:** Uma parte **CRUCIAL** - o **bloqueio do acesso público** pra esse bucket (**MUITO IMPORTANTE**).
+### Bloqueio de Acesso Público (CRÍTICO NOVAMENTE)
+
+Novamente, a parte **CRÍTICA** — bloqueio de acesso público.
 
 ![Block Frontend Public Access](public/imagens_da_documentacao_aws/61.jpeg)
 
-**Imagem 62:** Bucket do frontend sendo criado.
+**Por quê?** Porque todo acesso vai ser via CloudFront, não direto ao S3. O bucket é privado.
+
+### Bucket Criado
+
+Bucket do frontend pronto.
 
 ![Frontend Bucket Success](public/imagens_da_documentacao_aws/62.jpeg)
 
 ### Upload dos Arquivos Estáticos
 
-**Imagem 63:** Dentro do bucket do frontend, iniciando o **upload de todos os arquivos estáticos** de dentro da pasta **DIST** da pasta **FRONTEND** com os arquivos estáticos.
+Iniciando o upload de todos os arquivos estáticos da pasta **DIST**.
 
-![DIST Upload Start](public/imagens_da_documentacao_aws/63.jpeg)
+![Upload Start](public/imagens_da_documentacao_aws/63.jpeg)
 
-**Imagem 64:** Fazendo upload dos arquivos estáticos da pasta **DIST**. E antes disso, eu preparei o ambiente localmente no **VS CODE** onde:
+**Preparação prévia no VS Code:**
 - Arrumei variáveis de ambiente
-- Fiz **build do frontend** usando **PNPM RUN BUILD** (lembrando que **não usei NPM** mas **PNPM** por ser **mais leve e versátil** e lembrando, **primeira vez usando PNPM**, mostrando e provando que **posso sim me adaptar a mudanças**)
+- Executei `pnpm run build` para gerar a pasta `dist/`
 
-Algo **muito importante** - arquivo **INDEX.HTML**. Após fazer upload dos arquivos estáticos, vamos para a distribuição no CloudFront.
+⚠️ **Nota importante:** Usei **PNPM** em vez de NPM porque:
+- Mais leve (economiza espaço em disco)
+- Mais versátil (monorepo support melhor)
+- **Primeira vez usando PNPM** — mostrando minha capacidade de adaptação
 
-![PNPM Build and index.html](public/imagens_da_documentacao_aws/64.jpeg)
+O build gerou:
+- `index.html`
+- `assets/` (JavaScript, CSS, imagens)
+- Configurações de cache apropriadas
+
+![PNPM Build Output](public/imagens_da_documentacao_aws/64.jpeg)
+
+**ATENÇÃO:** O arquivo `index.html` é crucial. Vamos usar isso em breve.
 
 ### Criando a Distribuição CloudFront
 
-**Imagem 65:** Já criando a distribuição onde dei o nome de **frontend-distribuition**, coloquei a descrição adequada.
+Agora vem o "acelerar globalmente".
+
+Nome: **frontend-distribuition**
+Descrição: "Global distribution for Nebula Archive frontend"
 
 ![Distribution Creation](public/imagens_da_documentacao_aws/65.jpeg)
 
-**Imagem 66:** Selecionando a origem (onde fica os arquivos que eu quero distribuir? No **S3 do FRONTEND**). Na mesma imagem mostra eu selecionando o **bucket do FRONTEND**.
+### Configurando a Origem
+
+Selecionando a origem — onde ficam os arquivos que quero distribuir?
+
+Origem: **S3 do Frontend** (`nebula-archive-frontend-prod`)
 
 ![Origin Selection](public/imagens_da_documentacao_aws/66.jpeg)
 
-### Configurando Segurança
+### Ativando Proteção: WAF (Web Application Firewall)
 
-**Imagem 67:** Algo **IMPORTANTÍSSIMO** para a proteção da infraestrutura - a **ativação do serviço WAF** para proteção do sistema contra **injeção de SQL**.
-
-**⚠️ Atenção:** DURANTE ESSE PROCESSO, ENFRENTEI UMA SÉRIE DE DIFICULDADES PARA QUE TODO O SISTEMA ESTEJA FUNCIONANDO PERFEITAMENTE. EU TINHA COLOCADO A **PROTEÇÃO NÍVEL ALTA NO WAF** E ACHEI QUE ERA ESSE NÍVEL DE PROTEÇÃO QUE ESTAVA **BLOQUEANDO A ENTRADA NO SITE**. ENTÃO, DESATIVEI ESSA FUNCIONALIDADE POSTERIORMENTE E DEPOIS O ATIVEI.
+Algo **IMPORTANTÍSSIMO** para proteger a infraestrutura — ativando o serviço **WAF** para proteção contra injeção de SQL e outros ataques comuns.
 
 ![WAF Activation](public/imagens_da_documentacao_aws/67.jpeg)
 
-**Imagem 68:** Colocando o **nível de proteção contra ataques DDoS** - o famoso **SHIELD**.
+**Aqui está onde enfrentei um problema GRANDE:**
+
+Inicialmente, coloquei a proteção em **nível ALTO**. Aí descobri que o WAF estava **bloqueando requisições legítimas do frontend** — cada requisição fazia cache miss e o WAF rejeitava.
+
+🔍 **Debugging:**
+- Desativei temporariamente o WAF (para confirm que era o culpado)
+- Recebi requisições normalmente
+- Reativei o WAF com nível de proteção **MÉDIO** (menos restritivo)
+- Tudo começou a funcionar
+
+**Lição aprendida:** WAF em nível alto requer tuning fino de whitelist rules.
+
+### Ativando Shield (Proteção DDoS)
+
+Colocando o nível de proteção contra ataques **DDoS** — o famoso **AWS Shield**.
 
 ![DDoS Shield](public/imagens_da_documentacao_aws/68.jpeg)
 
-**Imagem 69:** Distribuição sendo criada.
+Shield oferece proteção contra ataques de negação de serviço distribuídos.
+
+### Distribuição Criada
 
 ![Distribution Created](public/imagens_da_documentacao_aws/69.jpeg)
 
 ### Configurando Default Root Object
 
-**Imagem 70:** **⚠️ Lembra quando eu disse para PRESTAR E GUARDAR A INFORMAÇÃO SOBRE O INDEX.HTML? ENTÃO, TIVE QUE VOLTAR NA DISTRIBUIÇÃO E ESPECIFICAR O INDEX.HTML.**
+⚠️ **AQUI ESTÁ O PONTO CRÍTICO:**
 
-![Index HTML Default](public/imagens_da_documentacao_aws/70.jpeg)
+Lembra quando eu disse: "GUARDE A INFORMAÇÃO SOBRE O INDEX.HTML"?
 
-### Aplicando Bucket Policy
+CloudFront precisa saber qual arquivo servir quando alguém acessa a raiz (`/`). Temos que especificar **index.html**.
 
-**Imagem 71:** Dentro da distribuição, **copiando a POLICY da distribuição**, código que irei colocar no **bucket S3 do FRONTEND** para ele **distribuir globalmente pelos pontos de presença** e **aumentar em, digamos que, 100% o acesso rápido** do conteúdo estático desse site, fazendo com que o site seja **extremamente rápido, como o FLASH**.
+![Default Root Object Configuration](public/imagens_da_documentacao_aws/70.jpeg)
 
-![Copy Distribution Policy](public/imagens_da_documentacao_aws/71.jpeg)
+Sem isso, CloudFront retorna **403 Forbidden** quando você tenta acessar `https://distribuition-dns/`.
 
-**Imagem 72:** Exatamente isso - estava dentro do **bucket policy do bucket do frontend** e colei o **código policy copiado da distribuição**.
+### Aplicando Bucket Policy da Distribuição
 
-![Apply Bucket Policy](public/imagens_da_documentacao_aws/72.jpeg)
+Dentro da distribuição, copiando a **OAC Policy** (Origin Access Control):
 
-### Configurando Error Pages
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "cloudfront.amazonaws.com"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::nebula-archive-frontend-prod/*"
+    }
+  ]
+}
+```
 
-**Imagem 73:** Criando basicamente **destinos de erro**, como:
-- **403: Forbidden**
-- **TTL 200**
+![Copy OAC Policy](public/imagens_da_documentacao_aws/71.jpeg)
 
-![Error Pages Creation](public/imagens_da_documentacao_aws/73.jpeg)
+Este código garante que **apenas CloudFront** pode acessar o bucket S3. Ninguém mais.
 
-**Imagem 74:** Páginas de erro **403 e 404** criadas.
+Copiando para o bucket policy do S3:
+
+![Apply to Bucket Policy](public/imagens_da_documentacao_aws/72.jpeg)
+
+### Configurando Páginas de Erro
+
+Criando tratamento para erros HTTP:
+
+- **403 Forbidden** → reencaminhar para `index.html` (para SPA routing)
+- **404 Not Found** → reencaminhar para `index.html`
+- **TTL:** 200 segundos
+
+![Error Pages Configuration](public/imagens_da_documentacao_aws/73.jpeg)
+
+Páginas de erro configuradas.
 
 ![Error Pages Done](public/imagens_da_documentacao_aws/74.jpeg)
 
-### Cache Invalidation
+### Cache Invalidation (A Parte Engenhosa)
 
-**Imagem 75:** Fazendo uma configuração que admito, **muito engenhosa e bem simples** - através do comando **"/*"** eu basicamente disse para **excluir o histórico de distribuição** e **passar a distribuir os arquivos** que eu acabei de fazer upload.
+Aqui vem uma configuração muito elegante. Executando cache invalidation:
 
-**⚠️ Atenção:** DURANTE O PROCESSO DE CRIAÇÃO E TENTATIVA DE FAZER A INFRAESTRUTURA FUNCIONAR, EU RODEI ESSE COMANDO **VÁRIAS VEZES** POIS TIVE QUE FAZER ALGUMAS **ALTERAÇÕES ESTRATÉGICAS**. FUI PESQUISANDO E FAZENDO, PROVANDO ASSIM TAMBÉM MINHA **CAPACIDADE DE PESQUISA E APLICAÇÃO**. DEU DOR DE CABEÇA, MAS O TRABALHO ESTÁ FEITO.
+```
+/*
+```
+
+Esse comando basicamente diz: "Invalide tudo do CloudFront e distribua os arquivos que eu acabei de fazer upload."
 
 ![Cache Invalidation](public/imagens_da_documentacao_aws/75.jpeg)
 
-**Imagem 76:** Novamente, colocando o **index.html** - **muito importante**.
+**Aqui vem a real:** Durante o processo de debug e tentativa de fazer a infraestrutura funcionar, rodei esse comando **várias vezes**. Cada vez que mudava algo estratégico (WAF levels, Bucket Policy, index.html config), fazia cache invalidation.
 
-![Index Default Confirmed](public/imagens_da_documentacao_aws/76.jpeg)
+Isso provou minha **capacidade de pesquisa e aplicação** — pesquisava documentação, aplicava mudanças, testava, repetia.
+
+Deu dor de cabeça? Sim. Mas o trabalho ficou pronto.
+
+Novamente, confirmando o **index.html** como default root object:
+
+![Index HTML Reconfirmed](public/imagens_da_documentacao_aws/76.jpeg)
 
 ---
 
-## 📝 10. Finalizações e Otimizações
+## 🔄 Push e Deployment Final
 
-### Push do Código
+### Git Push do Backend
 
-**Imagem 77:** Rodando o **push do VS Code** para o backend.
+Rodando push do código para o repositório:
 
-**⚠️ Atenção:** DURANTE A TENTATIVA DE FAZER A INFRA FUNCIONAR, TIVE QUE **RECRIAR VÁRIAS VEZES O CONTAINER** E ENVIAR PARA A EC2. TIVE DIFICULDADES, MAS COM MUITA PESQUISA, CONSEGUI.
+```bash
+git add .
+git commit -m "Configure env vars and docker setup"
+git push origin main
+```
 
 ![Backend Push](public/imagens_da_documentacao_aws/77.jpeg)
 
-### Configurações de Hospedagem Estática
+**Aqui também enfrentei dificuldades:** Tive que recriar o container **várias vezes** durante a tentativa de fazer a infraestrutura funcionar. Cada recreação exigia novo build, nova tag, novo push.
 
-**Imagem 78:** Novamente, fazendo a **edição do conteúdo do site estático** e colocando o **INDEX.HTML** - **muito importante**, vale ressaltar. Repare que eu marquei a **opção de hospedar site estático** - **importante também**.
+Mas com **muita pesquisa e paciência**, consegui.
 
-![Metadata Edit](public/imagens_da_documentacao_aws/78.jpeg)
+### Finalizando: Metadados de Arquivos Estáticos
 
-### Metadados de Arquivos Estáticos
+Fazendo edições finais no conteúdo do site estático:
 
-**Imagem 79:** Fazendo uma modificação importante - os **METADADOS dos arquivos estáticos**. Coloquei que foi definido pelo sistema:
-- **Chave:** `CONTENT-TYPE`
-- **Valor:** `text/plain`
+Novamente, confirmando **index.html** como arquivo default — muito importante.
 
-![Content Type Definition](public/imagens_da_documentacao_aws/79.jpeg)
+Marcando também a opção de **hospedar site estático** nas configurações do bucket.
 
-**Imagem 80:** E **BINGO** - resultado final, tudo funcionando como esperado!
+![Static Website Configuration](public/imagens_da_documentacao_aws/78.jpeg)
 
-![Final Result](public/imagens_da_documentacao_aws/80.jpeg)
+### Metadados MIME Type
 
----
+Fazendo modificação importante nos **metadados dos arquivos estáticos**:
 
-## 🎓 Conclusão e Aprendizados
+- **Chave:** `Content-Type`
+- **Valor:** `text/plain` (ou apropriado para cada tipo)
 
-**⚠️ Reflexão Final:**
+![MIME Type Configuration](public/imagens_da_documentacao_aws/79.jpeg)
 
-ALGUMAS ALTERAÇÕES EU CONSEGUI FAZER, **PRINCIPALMENTE NO CÓDIGO FONTE** PARA COLOCAR AS **VARIÁVEIS DE AMBIENTES NECESSÁRIAS** PARA AS **REQUISIÇÕES HTTPS FUNCIONAR**.
+### Resultado Final: Tudo Funcionando
 
-VALE RESSALTAR QUE **ESSE É O PRIMEIRO PROJETO CLOUD NATIVE** ONDE APLICO MEUS CONHECIMENTOS EM:
-- ✅ Programação **FRONTEND**
-- ✅ Programação **BACKEND**
-- ✅ Banco de Dados
-- ✅ **INFRAESTRUTURA/ARQUITETURA CLOUD**
+E **BINGO** — resultado final:
 
-**FOI DESAFIADOR, MAS APRENDI MUITA COISA.**
+![Final Result Working](public/imagens_da_documentacao_aws/80.jpeg)
+
+Tudo funcionando como esperado. 🎉
 
 ---
 
-## 💡 Principais Aprendizados
+## 📊 Análise de Custos {#custos}
 
-### ✅ O Que Funcionou
+Vamos ser realistas sobre o investimento financeiro nessa infraestrutura:
 
-✅ **Arquitetura Multi-AZ desde o início** - Mesmo em Single-AZ para economia, o design suporta Multi-AZ  
-✅ **Princípio de Menor Privilégio** - IAM roles restritas, sem Access Keys expostas  
-✅ **Presigned URLs** - Solução elegante para upload seguro sem exposição de credenciais  
-✅ **VPC + NAT Gateway + S3 Gateway Endpoint** - Isolamento de rede com otimização de custos  
-✅ **CloudFront + WAF + Shield** - Distribuição global com proteção em camadas  
-✅ **Full-Stack Integration** - Frontend → ALB → Backend → RDS → S3  
+| Serviço | Free Tier | Preço (Sem Free Tier) | Notas |
+|---------|-----------|----------------------|-------|
+| **EC2** (t3.micro) | 750h/mês | ~$8-10/mês | Single instance, Free Tier cobre |
+| **RDS** (db.t4g.micro) | 750h/mês | ~$15-18/mês | Free Tier cobre, 50GB storage |
+| **S3** (Storage) | 5 GB/mês | $0.023/GB | ~$1.15/mês para 50GB |
+| **S3** (Requests) | 20k GET/mês | $0.0004/request | GET requests cômodas |
+| **ALB** | - | $16-20/mês | Listener + LCU |
+| **NAT Gateway** | - | $32-45/mês | Hourly charge + data transfer |
+| **CloudFront** | - | $0.085/GB | Data transfer out (varia) |
+| **VPC** | - | $0/mês | Grátis |
+| **IAM** | - | $0/mês | Grátis |
+| **Security Groups** | - | $0/mês | Grátis |
+| **Systems Manager** | 100 onprem | $0/mês | Free for EC2 |
+| **CloudWatch** | 5GB logs | ~$0.50/GB | Monitoring |
 
-### 🔧 Desafios Encontrados
+**Estimativa de Custo Mensal (Sem Free Tier):**
+- **Mínimo (Otimizado):** ~$90-110/mês
+- **Máximo (Uso alto):** ~$150-200/mês
 
-⚠️ **Sincronização de Portas** - Todas as portas (Docker, Backend, SG, ALB, TG) precisam estar em perfeita sincronização. Erro em uma = falha total.
+**Com Free Tier ($200 crédito):**
+- **Meses de lab gratuito:** ~2-3 meses cobrindo a maioria
 
-⚠️ **WAF com Nível Alto** - Inicialmente bloqueava requisições legítimas. Necessário ajuste fino de regras.
-
-⚠️ **Index.html no CloudFront** - CloudFront precisa saber o arquivo default para root `/`. Sem isso, retorna 403.
-
-⚠️ **Cache Invalidation** - Após mudanças no frontend, necessário invalidar cache manualmente.
-
-⚠️ **Docker + EC2 via SSM** - Recriar container e enviá-lo exigiu pesquisa e iteração. Documentação em produção é crítica.
+**Em produção, com Auto Scaling + Multi-AZ + dados altos:**
+- Escalaria para $300-500+/mês dependendo de tráfego
 
 ---
 
-## 📝 Estrutura do Projeto
+## 💡 Lições Aprendidas {#lições}
 
+### ✅ O Que Funcionou Perfeitamente
+
+✅ **Arquitetura Multi-AZ desde o início**
+- Mesmo usando Single-AZ no RDS para economizar, o design suporta fácil upgrade
+- ALB em 2 AZs garante HA no frontend
+
+✅ **Princípio de Menor Privilégio (IAM)**
+- Cada componente tem apenas as permissões necessárias
+- Nenhum Access Key exposto
+- SSM ao invés de SSH — mais seguro
+
+✅ **Presigned URLs**
+- Solução elegante para upload seguro
+- 5 minutos de expiração previne vazamento
+- Impossível forçar bruta criptograficamente
+
+✅ **VPC + NAT Gateway + S3 Gateway Endpoint**
+- Isolamento de rede completo
+- EC2 em subrede privada (não acessível da internet)
+- RDS em subrede privada
+- Otimização de custos com Gateway Endpoint
+
+✅ **CloudFront + WAF + Shield**
+- Distribuição global
+- Proteção contra injeção SQL
+- Proteção contra DDoS
+- Latência reduzida para usuários globais
+
+✅ **Full-Stack Integration**
+- Frontend → CloudFront → ALB → Backend → RDS
+- Fluxo de dados bem definido
+- Sem "surpresas" na arquitetura
+
+### ⚠️ Desafios Encontrados
+
+⚠️ **Sincronização de Portas (Docker + Backend + SG + ALB + TG)**
+
+Um erro em qualquer um desses lugares quebra a comunicação:
+- Docker: `3000:3000`
+- Backend: `3000`
+- EC2 SG: `3000`
+- Target Group: `3000`
+- ALB Listener: `3000`
+
+**Solução:** Checklist de portas em cada passo.
+
+⚠️ **WAF em Nível Alto Bloqueando Requisições Legítimas**
+
+Descobri que o WAF estava rejeitando requisições do frontend legítimas.
+
+**Solução:** Reduzir para nível médio, depois fazer whitelist rules mais específicas.
+
+⚠️ **Index.html não Configurado no CloudFront**
+
+CloudFront não sabia qual arquivo servir em `/`.
+
+**Solução:** Especificar `index.html` como Default Root Object.
+
+⚠️ **Cache Não Atualizando Após Deploy**
+
+Depois de fazer push do novo código, CloudFront ainda servia versão antiga.
+
+**Solução:** Cache Invalidation com `/*`.
+
+⚠️ **RDS Connection Pooling com Prisma**
+
+Prisma não estava fazendo connection pooling corretamente no início.
+
+**Solução:** Configurar `@db.maxConnections` e usar Prisma's connection pooling.
+
+⚠️ **Docker + EC2 via SSM — Recreação Frequente de Container**
+
+Tive que recrear o container **várias vezes** durante testes:
+
+```bash
+docker ps -a
+docker rm $(docker ps -aq)
+docker rmi $(docker images -q)
+docker build -t nebula:latest .
+docker run -d -p 3000:3000 ...
 ```
-Nebula-Archive/
-├── Backend/                    # NestJS + Prisma ORM
-│   ├── src/
-│   │   ├── authservice/       # Autenticação JWT
-│   │   ├── files/             # Upload/Download com Presigned URLs
-│   │   ├── users/             # Gerenciamento de usuários
-│   │   ├── prisma/            # Conexão RDS
-│   │   └── storage/           # Integração S3
-│   ├── prisma/
-│   │   ├── schema.prisma      # Definição do BD
-│   │   └── migrations/        # Histórico de evolução do BD
-│   └── Dockerfile
-│
-├── Frontend/                   # React + Vite
-│   ├── src/
-│   │   ├── components/        # UI Components
-│   │   ├── lib/               # Utilitários (API client, auth context)
-│   │   └── hooks/             # Custom hooks
-│   ├── dist/                  # Output build (enviado para S3)
-│   └── vite.config.ts
-│
-├── Database/                   # RDS PostgreSQL (configurado via AWS)
-│   └── Dockerfile             # (Opcional para testes locais)
-│
-├── public/
-│   ├── arquitetura/           # Diagrama da arquitetura
-│   └── imagens_da_documentacao_aws/  # 80 imagens de evidências
-│
-└── README.md                   # Este arquivo
-```
+
+**Solução:** Script de deploy automatizado.
+
+### 🎓 Aprendizados Profundos
+
+**1. Arquitetura é Iteração**
+Não existe "primeira vez certa". Você desenha, testa, falha, aprende, redesenha.
+
+**2. Debugging é um Superpoder**
+CloudWatch logs, VPC Flow Logs, Security Group analysis — essas ferramentas salvaram meu projeto múltiplas vezes.
+
+**3. Documentação é Ouro**
+Cada erro que tive, alguém já teve antes e documentou. Pesquisa + aplicação = sucesso.
+
+**4. Segurança Não é Opcional**
+Implementar princípio de menor privilégio desde o início é mais fácil que refatorar depois.
+
+**5. Otimização de Custos Começa Cedo**
+Gateway Endpoint, Free Tier, Single-AZ (onde apropriado) — economizar 30% em custos sem sacrificar funcionalidade é um win.
 
 ---
 
-## 🔐 Checklist de Boas Práticas de Segurança
+## 🛠️ Stack Tecnológico {#stack}
 
-- [x] VPC isolada da internet (subredes privadas para EC2)
-- [x] Security Groups com least privilege (menor privilégio)
-- [x] RDS com credenciais não expostas em código
-- [x] EC2 sem SSH keys - acesso via Systems Manager
-- [x] S3 com bloqueio de acesso público
-- [x] S3 com criptografia SSE-S3 em repouso
-- [x] Presigned URLs com expiração curta (5 minutos)
-- [x] CloudFront com WAF ativado
-- [x] Shield ativado contra DDoS
-- [x] ALB em múltiplas AZs para alta disponibilidade
-- [x] Bucket policy restringindo acesso apenas via CloudFront
+| Camada | Tecnologia | Versão | Propósito |
+|--------|-----------|--------|----------|
+| **Infraestrutura** | AWS | v1 | Fundação cloud-native |
+| **VPC** | AWS VPC | v2 | Isolamento de rede |
+| **Compute** | EC2 | t3.micro/t4g.micro | Backend hosting |
+| **Banco de Dados** | RDS PostgreSQL | 15.x | Persistência relacional |
+| **Storage** | S3 | v2 | Armazenamento estático |
+| **CDN** | CloudFront | v1 | Distribuição global |
+| **Load Balancer** | ALB | v2 | Distribuição de tráfego |
+| **Firewall** | WAF | v2 | Proteção de aplicação |
+| **DDoS** | Shield | v1 | Proteção DDoS |
+| **Acesso Remoto** | Systems Manager | v1 | Terminal seguro |
+| **Backend** | NestJS | 10.x | Framework Node.js |
+| **Linguagem** | TypeScript | 5.x | Type-safe backend |
+| **ORM** | Prisma | 5.x | Database abstraction |
+| **Frontend** | React | 18.x | UI library |
+| **Build Tool** | Vite | 5.x | Frontend bundler |
+| **Package Manager** | PNPM | 8.x | Dependency management |
+| **Styling** | Tailwind CSS | 3.x | Utility-first CSS |
+| **Containerization** | Docker | 24.x | Application isolation |
+| **Infrastructure as Code** | (Manual) | v1 | AWS Console setup |
 
 ---
 
-**Construído com ❤️, ☕ e muito 🧠 - Primeiro projeto Cloud-Native de um arquiteto em ascensão.**
+## 📝 Considerações Finais {#finais}
+
+### 🎯 O que foi alcançado
+
+**Construí uma infraestrutura enterprise-grade** que:
+- ✅ Implementa as melhores práticas do **AWS Well-Architected Framework**
+- ✅ Suporta **escalabilidade horizontal** (Auto Scaling ready)
+- ✅ Possui **redundância em múltiplas AZs** (arquitetura designed)
+- ✅ Garante **segurança em camadas** (VPC, SG, IAM, WAF, Shield)
+- ✅ Oferece **ataque criptográfico impossível** (Presigned URLs)
+- ✅ Distribui **globalmente com latência mínima** (CloudFront)
+- ✅ Custa **aproximadamente $100-150/mês** (otimizado)
+
+### 🚀 O Caminho daqui em frente
+
+Possíveis melhorias:
+
+**Curto Prazo:**
+- [ ] Implementar Auto Scaling Groups (em vez de instância única)
+- [ ] Configurar HTTPS/SSL com ACM (Amazon Certificate Manager)
+- [ ] Adicionar monitoring com CloudWatch dashboards
+- [ ] Implementar CI/CD pipeline com CodePipeline
+
+**Médio Prazo:**
+- [ ] Multi-AZ RDS com automated failover
+- [ ] Backup strategy com S3 Glacier
+- [ ] Database replication para read scaling
+- [ ] Caching layer com ElastiCache (Redis)
+
+**Longo Prazo:**
+- [ ] Infrastructure as Code com Terraform/CDK
+- [ ] Multi-region deployment
+- [ ] Disaster recovery plan (RTO/RPO)
+- [ ] Compliance e auditing (CloudTrail)
+
+### 🎓 Reflexão Final
+
+Este foi meu **primeiro projeto cloud-native full-stack**. Não foi fácil. Enfrentei desafios em cada etapa — desde sincronização de portas até debug de WAF rules.
+
+Mas aqui está a verdade: **cada erro foi uma aula**. Cada falha foi um aprendizado. E cada sucesso (Hello World, BINGO, tudo funcionando) foi uma validação de que eu posso fazer isso em nível sênior.
+
+**Citando Harvey Specter:**
+> "Winners don't blame the ball, the trash can, or the wind in a room; they simply find a way to win."
+
+Encontrei um jeito de ganhar. A Nebula Archive está viva. 🌌
+
+Próxima etapa: **Layouts do sistema funcionando perfeitamente**. Vamos lá!
+
+---
+
+**Construído com ❤️, ☕ e muito 🧠 por um arquiteto cloud em ascensão.**
+
+**Status:** ✅ Laboratório Completo | 📊 Pronto para Análise | 🚀 Ready for Scale
+
+---
+
+*Última atualização: 23 de abril de 2026*
+*Repositório: https://github.com/GabrielF0900/Nebula-Archive*
