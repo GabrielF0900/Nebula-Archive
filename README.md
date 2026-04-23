@@ -16,7 +16,7 @@ Este é um projeto **full-stack** que combina conhecimentos de **Frontend, Backe
 
 ## 🏗️ Arquitetura do Projeto
 
-![Arquitetura do Projeto](public/arquitetura/diagrama.png)
+![Arquitetura do Projeto](public/arquitetura/diagrama.jpeg)
 
 > 💡 A imagem acima representa a topologia completa da infraestrutura, incluindo VPC, subnets públicas/privadas, ALB, EC2, RDS e distribuição global via CloudFront.
 
@@ -40,19 +40,19 @@ A VPC é o alicerce de toda a arquitetura. Foi configurada com **máxima disponi
   <summary>📸 Clique para ver as evidências visuais (Fotos 2-6)</summary>
 
 #### Console VPC - Criação da Fundação
-![VPC Console](public/imagens_da_documentacao_aws/2.png)
+![VPC Console](public/imagens_da_documentacao_aws/2.jpeg)
 
 #### Configuração do Bloco CIDR Principal (10.0.0.0/16)
-![CIDR Configuration](public/imagens_da_documentacao_aws/3.png)
+![CIDR Configuration](public/imagens_da_documentacao_aws/3.jpeg)
 
 #### Distribuição em 2 AZs com Subredes Públicas/Privadas
-![Multi-AZ Setup](public/imagens_da_documentacao_aws/4.png)
+![Multi-AZ Setup](public/imagens_da_documentacao_aws/4.jpeg)
 
 #### S3 Gateway Endpoint para Acesso Econômico
-![S3 Gateway Endpoint](public/imagens_da_documentacao_aws/5.png)
+![S3 Gateway Endpoint](public/imagens_da_documentacao_aws/5.jpeg)
 
 #### VPC Criada com Sucesso
-![VPC Success](public/imagens_da_documentacao_aws/6.png)
+![VPC Success](public/imagens_da_documentacao_aws/6.jpeg)
 
 </details>
 
@@ -77,19 +77,19 @@ A política `NebulaArchiveS3Policy` foi criada com permissões granulares para o
   <summary>📸 Clique para ver as evidências visuais (Fotos 8-12)</summary>
 
 #### Criação da Policy - Imagem 8
-![Policy Creation Start](public/imagens_da_documentacao_aws/8.png)
+![Policy Creation Start](public/imagens_da_documentacao_aws/8.jpeg)
 
 #### Policy Personalizada Gerada por IA - Imagem 9
-![AI Generated Policy](public/imagens_da_documentacao_aws/9.png)
+![AI Generated Policy](public/imagens_da_documentacao_aws/9.jpeg)
 
 #### Atualização para Nome Correto (nebula-archive-storage) - Imagem 10
-![Correct Bucket Name](public/imagens_da_documentacao_aws/10.png)
+![Correct Bucket Name](public/imagens_da_documentacao_aws/10.jpeg)
 
 #### Policy Nomeada: NebulaArchiveS3Policy - Imagem 11
-![Policy Named](public/imagens_da_documentacao_aws/11.png)
+![Policy Named](public/imagens_da_documentacao_aws/11.jpeg)
 
 #### Policy Criada com Sucesso - Imagem 12
-![Policy Success](public/imagens_da_documentacao_aws/12.png)
+![Policy Success](public/imagens_da_documentacao_aws/12.jpeg)
 
 </details>
 
@@ -105,13 +105,13 @@ A role `NebulaArchiveEC2Role` foi configurada com a política gerenciada AWS `Am
   <summary>📸 Clique para ver as evidências visuais (Fotos 13-15)</summary>
 
 #### Criação do EC2 Instance Profile - Imagem 13
-![EC2 Role Creation](public/imagens_da_documentacao_aws/13.png)
+![EC2 Role Creation](public/imagens_da_documentacao_aws/13.jpeg)
 
 #### Role Nomeada: NebulaArchiveEC2Role - Imagem 14
-![EC2 Role Named](public/imagens_da_documentacao_aws/14.png)
+![EC2 Role Named](public/imagens_da_documentacao_aws/14.jpeg)
 
 #### Profile Criado com Sucesso - Imagem 15
-![Profile Success](public/imagens_da_documentacao_aws/15.png)
+![Profile Success](public/imagens_da_documentacao_aws/15.jpeg)
 
 </details>
 
@@ -134,16 +134,16 @@ Três security groups foram criados para isolamento de tráfego por função:
   <summary>📸 Clique para ver as evidências visuais (Fotos 16-19)</summary>
 
 #### Console de Security Groups - Imagem 16
-![SG Console](public/imagens_da_documentacao_aws/16.png)
+![SG Console](public/imagens_da_documentacao_aws/16.jpeg)
 
 #### Criação do ALB Security Group - Imagem 17
-![ALB SG Creation](public/imagens_da_documentacao_aws/17.png)
+![ALB SG Creation](public/imagens_da_documentacao_aws/17.jpeg)
 
 #### Regras de Entrada (HTTP/HTTPS) - Imagem 18
-![ALB Ingress Rules](public/imagens_da_documentacao_aws/18.png)
+![ALB Ingress Rules](public/imagens_da_documentacao_aws/18.jpeg)
 
 #### ALB SG Criado com Sucesso - Imagem 19
-![ALB SG Success](public/imagens_da_documentacao_aws/19.png)
+![ALB SG Success](public/imagens_da_documentacao_aws/19.jpeg)
 
 </details>
 
@@ -163,13 +163,13 @@ Três security groups foram criados para isolamento de tráfego por função:
   <summary>📸 Clique para ver as evidências visuais (Fotos 20-22)</summary>
 
 #### Criação do EC2 Security Group - Imagem 20
-![EC2 SG Creation](public/imagens_da_documentacao_aws/20.png)
+![EC2 SG Creation](public/imagens_da_documentacao_aws/20.jpeg)
 
 #### Regras de Entrada Personalizadas (Porta 3000) - Imagem 21
-![EC2 Ingress Rules](public/imagens_da_documentacao_aws/21.png)
+![EC2 Ingress Rules](public/imagens_da_documentacao_aws/21.jpeg)
 
 #### EC2 SG Criado com Sucesso - Imagem 22
-![EC2 SG Success](public/imagens_da_documentacao_aws/22.png)
+![EC2 SG Success](public/imagens_da_documentacao_aws/22.jpeg)
 
 </details>
 
@@ -185,10 +185,10 @@ Três security groups foram criados para isolamento de tráfego por função:
   <summary>📸 Clique para ver as evidências visuais (Fotos 23-24)</summary>
 
 #### Criação do RDS Security Group - Imagem 23
-![RDS SG Creation](public/imagens_da_documentacao_aws/23.png)
+![RDS SG Creation](public/imagens_da_documentacao_aws/23.jpeg)
 
 #### RDS SG Criado com Sucesso - Imagem 24
-![RDS SG Success](public/imagens_da_documentacao_aws/24.png)
+![RDS SG Success](public/imagens_da_documentacao_aws/24.jpeg)
 
 </details>
 
@@ -212,34 +212,34 @@ O RDS PostgreSQL foi configurado como o **coração da aplicação**, armazenand
   <summary>📸 Clique para ver as evidências visuais (Fotos 25-33)</summary>
 
 #### Console RDS - Imagem 25
-![RDS Console](public/imagens_da_documentacao_aws/25.png)
+![RDS Console](public/imagens_da_documentacao_aws/25.jpeg)
 
 #### Seleção do Motor PostgreSQL - Imagem 26
-![PostgreSQL Selection](public/imagens_da_documentacao_aws/26.png)
+![PostgreSQL Selection](public/imagens_da_documentacao_aws/26.jpeg)
 
 #### Plano Gratuito (db.t4g.micro) - Imagem 27
-![Free Tier Selection](public/imagens_da_documentacao_aws/27.png)
+![Free Tier Selection](public/imagens_da_documentacao_aws/27.jpeg)
 
 #### Reconfiguração PostgreSQL - Imagem 28
-![PostgreSQL Config](public/imagens_da_documentacao_aws/28.png)
+![PostgreSQL Config](public/imagens_da_documentacao_aws/28.jpeg)
 
 #### Implantação Single-AZ - Imagem 29
-![Single-AZ Deployment](public/imagens_da_documentacao_aws/29.png)
+![Single-AZ Deployment](public/imagens_da_documentacao_aws/29.jpeg)
 
 #### Nome da Instância e Credenciais - Imagem 30
-![DB Name & Credentials](public/imagens_da_documentacao_aws/30.png)
+![DB Name & Credentials](public/imagens_da_documentacao_aws/30.jpeg)
 
 #### Tipo de Instância e Armazenamento - Imagem 31
-![Instance Type Storage](public/imagens_da_documentacao_aws/31.png)
+![Instance Type Storage](public/imagens_da_documentacao_aws/31.jpeg)
 
 #### Conectividade VPC - Imagem 32
-![VPC Connectivity](public/imagens_da_documentacao_aws/32.png)
+![VPC Connectivity](public/imagens_da_documentacao_aws/32.jpeg)
 
 #### Security Group RDS Atribuído - Imagem 33
-![RDS SG Assignment](public/imagens_da_documentacao_aws/33.png)
+![RDS SG Assignment](public/imagens_da_documentacao_aws/33.jpeg)
 
 #### RDS Criado com Sucesso - Imagem 42
-![RDS Success](public/imagens_da_documentacao_aws/42.png)
+![RDS Success](public/imagens_da_documentacao_aws/42.jpeg)
 
 </details>
 
@@ -264,16 +264,16 @@ Armazena todos os arquivos estáticos dos usuários de forma **permanente e priv
   <summary>📸 Clique para ver as evidências visuais (Fotos 34-37)</summary>
 
 #### Criação do Bucket Inicial - Imagem 34
-![Bucket Creation](public/imagens_da_documentacao_aws/34.png)
+![Bucket Creation](public/imagens_da_documentacao_aws/34.jpeg)
 
 #### Bloqueio de Acesso Público (Essencial) - Imagem 35
-![Block Public Access](public/imagens_da_documentacao_aws/35.png)
+![Block Public Access](public/imagens_da_documentacao_aws/35.jpeg)
 
 #### Criptografia SSE-S3 Ativada - Imagem 36
-![SSE-S3 Encryption](public/imagens_da_documentacao_aws/36.png)
+![SSE-S3 Encryption](public/imagens_da_documentacao_aws/36.jpeg)
 
 #### Bucket Criado com Sucesso - Imagem 37
-![Bucket Success](public/imagens_da_documentacao_aws/37.png)
+![Bucket Success](public/imagens_da_documentacao_aws/37.jpeg)
 
 </details>
 
@@ -325,19 +325,19 @@ Uma instância **EC2 única** hospeda o backend NestJS + ORM Prisma. Em produç�
   <summary>📸 Clique para ver as evidências visuais (Fotos 38-43)</summary>
 
 #### Painel EC2 - Imagem 38
-![EC2 Dashboard](public/imagens_da_documentacao_aws/38.png)
+![EC2 Dashboard](public/imagens_da_documentacao_aws/38.jpeg)
 
 #### Configuração de VPC e Subnet Privada - Imagem 39
-![EC2 VPC Config](public/imagens_da_documentacao_aws/39.png)
+![EC2 VPC Config](public/imagens_da_documentacao_aws/39.jpeg)
 
 #### Atribuição de Security Group e Role IAM - Imagem 40
-![EC2 SG and Role](public/imagens_da_documentacao_aws/40.png)
+![EC2 SG and Role](public/imagens_da_documentacao_aws/40.jpeg)
 
 #### EC2 Rodando com Sucesso - Imagem 41
-![EC2 Running](public/imagens_da_documentacao_aws/41.png)
+![EC2 Running](public/imagens_da_documentacao_aws/41.jpeg)
 
 #### Verificação de Docker e Docker Compose - Imagem 43
-![Docker Verification](public/imagens_da_documentacao_aws/43.png)
+![Docker Verification](public/imagens_da_documentacao_aws/43.jpeg)
 
 </details>
 
@@ -366,7 +366,7 @@ JWT_SECRET=seu_secret_super_seguro
   <summary>📸 Clique para ver a evidência do .env (Foto 56)</summary>
 
 #### Arquivo .env Configurado - Imagem 56
-![.env Configuration](public/imagens_da_documentacao_aws/56.png)
+![.env Configuration](public/imagens_da_documentacao_aws/56.jpeg)
 
 </details>
 
@@ -382,16 +382,16 @@ O ALB recebe todo o tráfego da internet (porta 80) e distribui para a(s) instâ
   <summary>📸 Clique para ver as evidências visuais (Fotos 44-47)</summary>
 
 #### Criação do Target Group - Imagem 44
-![Target Group Creation](public/imagens_da_documentacao_aws/44.png)
+![Target Group Creation](public/imagens_da_documentacao_aws/44.jpeg)
 
 #### Configuração: TG-Nebula-Archive, Porta 3000 - Imagem 45
-![Target Group Config](public/imagens_da_documentacao_aws/45.png)
+![Target Group Config](public/imagens_da_documentacao_aws/45.jpeg)
 
 #### Atribuição de EC2 ao Target Group - Imagem 46
-![EC2 to TG Assignment](public/imagens_da_documentacao_aws/46.png)
+![EC2 to TG Assignment](public/imagens_da_documentacao_aws/46.jpeg)
 
 #### Target Group Criado com Sucesso - Imagem 47
-![TG Success](public/imagens_da_documentacao_aws/47.png)
+![TG Success](public/imagens_da_documentacao_aws/47.jpeg)
 
 </details>
 
@@ -410,22 +410,22 @@ O ALB recebe todo o tráfego da internet (porta 80) e distribui para a(s) instâ
   <summary>📸 Clique para ver as evidências visuais (Fotos 48-53)</summary>
 
 #### Opções de ELB - Imagem 48
-![ELB Options](public/imagens_da_documentacao_aws/48.png)
+![ELB Options](public/imagens_da_documentacao_aws/48.jpeg)
 
 #### Configuração do ALB - Imagem 49
-![ALB Configuration](public/imagens_da_documentacao_aws/49.png)
+![ALB Configuration](public/imagens_da_documentacao_aws/49.jpeg)
 
 #### Seleção de Subnets Públicas - Imagem 50
-![ALB Subnets](public/imagens_da_documentacao_aws/50.png)
+![ALB Subnets](public/imagens_da_documentacao_aws/50.jpeg)
 
 #### Atribuição de Security Group - Imagem 51
-![ALB SG Assignment](public/imagens_da_documentacao_aws/51.png)
+![ALB SG Assignment](public/imagens_da_documentacao_aws/51.jpeg)
 
 #### Configuração de Listener e Target Group - Imagem 52
-![ALB Listener Config](public/imagens_da_documentacao_aws/52.png)
+![ALB Listener Config](public/imagens_da_documentacao_aws/52.jpeg)
 
 #### ALB Criado com Sucesso - Imagem 53
-![ALB Success](public/imagens_da_documentacao_aws/53.png)
+![ALB Success](public/imagens_da_documentacao_aws/53.jpeg)
 
 </details>
 
@@ -449,19 +449,19 @@ Armazena todos os arquivos estáticos do React/Vite compilados (pasta `dist/`).
   <summary>📸 Clique para ver as evidências visuais (Fotos 60-64)</summary>
 
 #### Criação do Bucket Frontend - Imagem 60
-![Frontend Bucket Creation](public/imagens_da_documentacao_aws/60.png)
+![Frontend Bucket Creation](public/imagens_da_documentacao_aws/60.jpeg)
 
 #### Bloqueio de Acesso Público (Essencial) - Imagem 61
-![Block Frontend Public Access](public/imagens_da_documentacao_aws/61.png)
+![Block Frontend Public Access](public/imagens_da_documentacao_aws/61.jpeg)
 
 #### Bucket Frontend Criado - Imagem 62
-![Frontend Bucket Success](public/imagens_da_documentacao_aws/62.png)
+![Frontend Bucket Success](public/imagens_da_documentacao_aws/62.jpeg)
 
 #### Upload de Arquivos da Pasta DIST - Imagem 63
-![DIST Upload](public/imagens_da_documentacao_aws/63.png)
+![DIST Upload](public/imagens_da_documentacao_aws/63.jpeg)
 
 #### Build com PNPM e Upload de index.html - Imagem 64
-![PNPM Build and index.html](public/imagens_da_documentacao_aws/64.png)
+![PNPM Build and index.html](public/imagens_da_documentacao_aws/64.jpeg)
 
 </details>
 
@@ -484,40 +484,40 @@ Distribui o conteúdo estático globalmente através de **154+ edge locations** 
   <summary>📸 Clique para ver as evidências visuais (Fotos 65-76)</summary>
 
 #### Criação da Distribuição - Imagem 65
-![Distribution Creation](public/imagens_da_documentacao_aws/65.png)
+![Distribution Creation](public/imagens_da_documentacao_aws/65.jpeg)
 
 #### Seleção de Origem (S3 Frontend) - Imagem 66
-![Origin Selection](public/imagens_da_documentacao_aws/66.png)
+![Origin Selection](public/imagens_da_documentacao_aws/66.jpeg)
 
 #### Ativação de WAF para Proteção SQL Injection - Imagem 67
-![WAF Activation](public/imagens_da_documentacao_aws/67.png)
+![WAF Activation](public/imagens_da_documentacao_aws/67.jpeg)
 
 #### Proteção DDoS Shield - Imagem 68
-![DDoS Shield](public/imagens_da_documentacao_aws/68.png)
+![DDoS Shield](public/imagens_da_documentacao_aws/68.jpeg)
 
 #### Distribuição Criada - Imagem 69
-![Distribution Created](public/imagens_da_documentacao_aws/69.png)
+![Distribution Created](public/imagens_da_documentacao_aws/69.jpeg)
 
 #### Definição de index.html como Default Root Object - Imagem 70
-![Index HTML Default](public/imagens_da_documentacao_aws/70.png)
+![Index HTML Default](public/imagens_da_documentacao_aws/70.jpeg)
 
 #### Cópia da Distribution Policy para Bucket - Imagem 71
-![Copy Distribution Policy](public/imagens_da_documentacao_aws/71.png)
+![Copy Distribution Policy](public/imagens_da_documentacao_aws/71.jpeg)
 
 #### Aplicação de Bucket Policy - Imagem 72
-![Apply Bucket Policy](public/imagens_da_documentacao_aws/72.png)
+![Apply Bucket Policy](public/imagens_da_documentacao_aws/72.jpeg)
 
 #### Criação de Error Pages (403, 404) - Imagem 73
-![Error Pages Creation](public/imagens_da_documentacao_aws/73.png)
+![Error Pages Creation](public/imagens_da_documentacao_aws/73.jpeg)
 
 #### Error Pages Configuradas - Imagem 74
-![Error Pages Done](public/imagens_da_documentacao_aws/74.png)
+![Error Pages Done](public/imagens_da_documentacao_aws/74.jpeg)
 
 #### Cache Invalidation via "/*" - Imagem 75
-![Cache Invalidation](public/imagens_da_documentacao_aws/75.png)
+![Cache Invalidation](public/imagens_da_documentacao_aws/75.jpeg)
 
 #### Index.html Definido Como Default - Imagem 76
-![Index Default Confirmed](public/imagens_da_documentacao_aws/76.png)
+![Index Default Confirmed](public/imagens_da_documentacao_aws/76.jpeg)
 
 </details>
 
@@ -556,16 +556,16 @@ Para garantir que o navegador interprete corretamente os arquivos estáticos, me
   <summary>📸 Clique para ver as evidências visuais (Fotos 77-80)</summary>
 
 #### Push do Backend para Repo - Imagem 77
-![Backend Push](public/imagens_da_documentacao_aws/77.png)
+![Backend Push](public/imagens_da_documentacao_aws/77.jpeg)
 
 #### Edição de Metadados - Imagem 78
-![Metadata Edit](public/imagens_da_documentacao_aws/78.png)
+![Metadata Edit](public/imagens_da_documentacao_aws/78.jpeg)
 
 #### Definição de CONTENT-TYPE - Imagem 79
-![Content Type Definition](public/imagens_da_documentacao_aws/79.png)
+![Content Type Definition](public/imagens_da_documentacao_aws/79.jpeg)
 
 #### Resultado Final - Imagem 80
-![Final Result](public/imagens_da_documentacao_aws/80.png)
+![Final Result](public/imagens_da_documentacao_aws/80.jpeg)
 
 </details>
 
@@ -613,7 +613,7 @@ Content-Type: application/json (para .json)
   <summary>📸 O Resultado Final (Foto 59)</summary>
 
 #### Backend Respondendo com Sucesso
-![Hello World](public/imagens_da_documentacao_aws/59.png)
+![Hello World](public/imagens_da_documentacao_aws/59.jpeg)
 
 O backend está up, BD está sincronizado, S3 pronto, CloudFront distribuindo globalmente. **Bingo!**
 
