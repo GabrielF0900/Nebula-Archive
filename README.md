@@ -12,6 +12,12 @@
 
 ---
 
+## 🎥 Apresentação do Sistema em Video
+
+[![Assista a apresentação do Nebula Archive](https://img.shields.io/badge/YouTube-Assista%20Aqui-red?style=for-the-badge&logo=youtube)](https://youtu.be/2mzU7E_bWJA)
+
+---
+
 ## 📑 Índice
 
 1. [Visão Geral da Arquitetura](#visão-geral)
@@ -304,7 +310,11 @@ Configuração escolhida:
 
 **Aqui enfrentei meu primeiro erro:** Cometi um equívoco de configuração, tive que voltar e escolher novamente.
 
-![Reconfiguring PostgreSQL](public/imagens_da_documentacao_aws/28.jpeg)
+> **"Eu nunca perço."** — Harvey Specter
+
+E de fato, voltei, reconfigurei PostgreSQL corretamente e fiz o banco funcionar perfeitamente.
+
+![Reconfiguring PostgreSQL - Banco Correto](public/imagens_da_documentacao_aws/28-banco-correto.jpeg)
 
 ### Escolhendo Single-AZ (Com Ressalva)
 
