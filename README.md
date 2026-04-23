@@ -18,7 +18,17 @@
 
 ---
 
-## 📑 Índice
+## �️ Validação de Resiliência: Ataque Controlado
+
+[![Assista ao Teste de Stress](https://img.shields.io/badge/YouTube-Assista%20ao%20Teste%20de%20Stress-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=kR-yKAzhazk)
+
+Para validar as camadas de proteção do Nebula Archive, executei um ataque controlado de negação de serviço (HTTP Flood). O objetivo foi testar a eficácia da regra de Rate Limiting implementada no AWS WAF Global.
+
+**Resultado do Teste:** O sistema apresentou resiliência imediata. Assim que o limite de requisições foi atingido, o tráfego malicioso foi mitigado na Edge Location do CloudFront, retornando o código de status 403 Forbidden. O bloqueio foi verificado em tempo real tanto via terminal (CLI) quanto via interface de usuário (UI), confirmando o isolamento completo do IP atacante sem afetar a disponibilidade global do sistema.
+
+---
+
+## �📑 Índice
 
 1. [Visão Geral da Arquitetura](#visão-geral)
 2. [Fundação da Infraestrutura: VPC e Topologia](#vpc-topologia)
