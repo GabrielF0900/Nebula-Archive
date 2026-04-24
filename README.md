@@ -40,10 +40,11 @@ Para validar as camadas de proteção do Nebula Archive, executei um ataque cont
 8. [Orquestração de Tráfego: Application Load Balancer](#alb)
 9. [Deployment e Hello World](#deployment)
 10. [Frontend e Distribuição Global: CloudFront](#frontend-cloudfront)
-11. [Análise de Custos](#custos)
-12. [Lições Aprendidas](#lições)
-13. [Stack Tecnológico](#stack)
-14. [Considerações Finais](#finais)
+11. [Layouts do Sistema](#layouts)
+12. [Análise de Custos](#custos)
+13. [Lições Aprendidas](#lições)
+14. [Stack Tecnológico](#stack)
+15. [Considerações Finais](#finais)
 
 ---
 
@@ -884,6 +885,83 @@ Tudo funcionando como esperado. 🎉
 
 ---
 
+## 🎨 Layouts do Sistema {#layouts}
+
+Vamos agora para os layouts do sistema! Let´s Go.
+
+### Home
+A página inicial oferece uma visão geral do sistema com acesso rápido aos arquivos e funcionalidades principais.
+
+![Home](public/Layouts_do_sistema/home.jpeg)
+
+![Home - Versão 2](public/Layouts_do_sistema/home-2.jpeg)
+
+![Home - Versão 3](public/Layouts_do_sistema/home-3.jpeg)
+
+![Home - Versão 4](public/Layouts_do_sistema/home-4.jpeg)
+
+![Home - Versão 5](public/Layouts_do_sistema/home-5.jpeg)
+
+### Login
+Interface de autenticação segura onde os usuários acessam suas contas com credenciais criptografadas.
+
+![Login](public/Layouts_do_sistema/login.jpeg)
+
+### Registro
+Tela de cadastro intuitiva para novos usuários criarem suas contas na plataforma.
+
+![Registro](public/Layouts_do_sistema/register.jpeg)
+
+### Dashboard
+Painel de controle central onde os usuários gerenciam seus arquivos e monitoram atividades.
+
+![Dashboard](public/Layouts_do_sistema/dashboard.jpeg)
+
+![Dashboard - Versão 1](public/Layouts_do_sistema/dashboard-1.jpeg)
+
+![Dashboard - Versão 2](public/Layouts_do_sistema/dashboard-2.jpeg)
+
+![Dashboard - Versão 3](public/Layouts_do_sistema/dashboard-3.jpeg)
+
+### Perfil
+Página de perfil do usuário onde é possível visualizar e editar informações pessoais.
+
+![Perfil](public/Layouts_do_sistema/perfil.jpeg)
+
+### Configurações
+Tela de configurações onde os usuários ajustam preferências e opções do sistema.
+
+![Configurações](public/Layouts_do_sistema/configuracoes.jpeg)
+
+![Configurações - Versão 2](public/Layouts_do_sistema/configuracoes-2.jpeg)
+
+### Monitoramento
+Visualização de métricas e estatísticas em tempo real do sistema.
+
+![Monitoramento](public/Layouts_do_sistema/monitoramento.jpeg)
+
+### Distribuição
+Interface de gerenciamento de distribuição de arquivos e controle de acesso.
+
+![Distribuição](public/Layouts_do_sistema/distruibuicao.jpeg)
+
+### Deletando Arquivos
+Confirmação e gerenciamento seguro da exclusão de arquivos do sistema.
+
+![Deletando Arquivos](public/Layouts_do_sistema/deletando-arquivos.jpeg)
+
+### Quantidade de Arquivos Processados
+Dashboard mostrando estatísticas sobre quantidade de arquivos que foram processados.
+
+![Quantidade de Arquivos Processados](public/Layouts_do_sistema/quantidade-arquivos-processados.jpeg)
+
+### Recovery
+Ferramentas de recuperação de arquivos deletados ou corrompidos.
+
+![Recovery](public/Layouts_do_sistema/recovery.jpeg)
+
+---
+
 ## 📊 Análise de Custos {#custos}
 
 Vamos ser realistas sobre o investimento financeiro nessa infraestrutura:
@@ -1088,11 +1166,9 @@ Este foi meu **primeiro projeto cloud-native full-stack**. Não foi fácil. Enfr
 Mas aqui está a verdade: **cada erro foi uma aula**. Cada falha foi um aprendizado. E cada sucesso (Hello World, BINGO, tudo funcionando) foi uma validação de que eu posso fazer isso em nível sênior.
 
 **Citando Harvey Specter:**
-> "Winners don't blame the ball, the trash can, or the wind in a room; they simply find a way to win."
+> "Vencedores não culpam a bola, a lixeira ou o vento em uma sala; eles simplesmente encontram um jeito de vencer."
 
 Encontrei um jeito de ganhar. A Nebula Archive está viva. 🌌
-
-Próxima etapa: **Layouts do sistema funcionando perfeitamente**. Vamos lá!
 
 ---
 
