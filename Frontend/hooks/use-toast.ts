@@ -1,4 +1,4 @@
-// Inspired by react-hot-toast library
+// Sistema de toast baseado em React com gerenciamento centralizado de notificações
 import * as React from "react";
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";

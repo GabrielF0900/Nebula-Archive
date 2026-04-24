@@ -1,6 +1,6 @@
 /**
- * Notification Service
- * Centralizes all notification types and messages following SOLID principles
+ * Serviço centralizado de notificações
+ * Implementa princípios SOLID para organização de mensagens
  */
 
 export type NotificationType = "success" | "error" | "warning" | "info";
@@ -13,8 +13,8 @@ export interface NotificationPayload {
 }
 
 /**
- * Pre-defined notification templates for common actions
- * This follows the Single Responsibility Principle by centralizing all messages
+ * Templates de notificação pré-definidos para ações comuns
+ * Centraliza todas as mensagens seguindo o Princípio de Responsabilidade Única
  */
 export const NotificationTemplates = {
   // Auth notifications

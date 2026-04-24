@@ -144,7 +144,6 @@ export class UsersService {
       throw new BadRequestException('Usuário não encontrado');
     }
 
-    // Delete cascade will handle related files if configured in schema
     await this.prisma.user.delete({
       where: { id: Number(id) },
     });

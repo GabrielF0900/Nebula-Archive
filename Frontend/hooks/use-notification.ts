@@ -1,7 +1,6 @@
 /**
- * useNotification Hook
- * Provides a clean interface for showing notifications
- * Follows the Dependency Injection pattern
+ * Hook para gerenciar notificações no sistema
+ * Implementa padrão de Injeção de Dependência
  */
 
 import { toast } from "sonner";
@@ -9,8 +8,8 @@ import type { NotificationPayload } from "@/lib/notification-service";
 
 export function useNotification() {
   /**
-   * Show a notification
-   * @param notification - NotificationPayload with type, title, and description
+   * Exibe uma notificação na tela
+   * @param notification - NotificationPayload com tipo, título e descrição
    */
   const notify = (notification: NotificationPayload) => {
     const message = notification.description || notification.title;
