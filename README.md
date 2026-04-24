@@ -20,7 +20,7 @@
 
 ## �️ Validação de Resiliência: Ataque Controlado
 
-[![Assista ao Teste de Stress](https://img.shields.io/badge/YouTube-Assista%20ao%20Teste%20de%20Stress-red?style=for-the-badge&logo=youtube)](https://www.youtube.com/watch?v=kR-yKAzhazk)
+[![Assista ao Teste de Stress]([https://youtu.be/NW6hn2tEBeQ](https://www.youtube.com/watch?v=NW6hn2tEBeQ))
 
 Para validar as camadas de proteção do Nebula Archive, executei um ataque controlado de negação de serviço (HTTP Flood). O objetivo foi testar a eficácia da regra de Rate Limiting implementada no AWS WAF Global.
 
